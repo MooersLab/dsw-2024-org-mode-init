@@ -29,7 +29,7 @@ I plan to add org-roam.
 - Give the Emacs several minutes to install about 60 packages during startup.
 - Startup time will be about 10 seconds in future startups.
 - If you wish to use org-agenda, uncomment and configure the file paths of the org-agenda section.
-- Enjoy
+- If commented out three packages that require customized file paths. Editt these to suit your workflow.
 - Note: I map the above command to the zsh alias `e29f`. I use `e29f +500 logXXXX.org` to open `logXXXX.org` in the current directory on startup and to place the cursor at line 500.
   
 ## Update history
