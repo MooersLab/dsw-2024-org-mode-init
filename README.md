@@ -1,7 +1,7 @@
 ![Version](https://img.shields.io/static/v1?label=dsw-2024-org-mode-init&message=0.0&color=brightcolor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-# Emacs configuration file (init.el) for writing research papers in Org-mode 
+# Emacs configuration file for writing research papers in Org-mode 
 
 This presentation is for the 2024 November 22 meeting of the Oklahoma Data Science Workshop.
 
