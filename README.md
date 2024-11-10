@@ -5,7 +5,7 @@
 
 This presentation is for the 2024 November 22 meeting of the Oklahoma Data Science Workshop.
 
-This configuration file, `init.el`, focuses on writing research papers in org-mode in GNU Emacs.
+This configuration file, `init.el`, focuses on writing research papers in org-mode in `GNU Emacs`.
 It was meant to use default settings, but I included packages I enjoy using (e.g., treemacs, undo-tree, vertico, marginalia, citar, yasnippets, pdf-tools).
 It includes `company` for autocompletion.
 It uses `lsp-mode` instead of eglot.
