@@ -1,7 +1,9 @@
 ![Version](https://img.shields.io/static/v1?label=dsw-2024-org-mode-init&message=0.0&color=brightcolor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-# Emacs configuration file (init.el) for a presentation about Org-mode at the 2024 November 22 meeting of the Oklahoma Data Science Workshop
+# Emacs configuration file (init.el) for a presentation about writing research papers in Org-mode 
+
+This presentation is for the 2024 November 22 meeting of the Oklahoma Data Science Workshop.
 
 This configuration file, `init.el`, focuses on writing research papers in org-mode in GNU Emacs.
 It was meant to use default settings, but I included packages I enjoy using (e.g., treemacs, undo-tree, vertico, marginalia, citar, yasnippets, pdf-tools).
