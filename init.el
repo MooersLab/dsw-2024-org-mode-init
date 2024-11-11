@@ -1,8 +1,6 @@
 (setq user-emacs-directory "~/e29fewpackages/")
-
-;; Source https://jonathanabennett.github.io/blog/2019/05/29/writing-academic-papers-with-org-mode by Jonathan Bennett
-;; alias e29o='/Applications/Emacs29.3.app/Contents/MacOS/Emacs --init-directory ~/e29org --debug-init'
-
+;; alias e29f='/Applications/Emacs29.4.app/Contents/MacOS/Emacs \
+;; --init-directory ~/e29fewpackages --debug-init'
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name
@@ -18,31 +16,10 @@
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
-
 (straight-use-package 'org)
-
 (setq package-enable-at-startup nil)
-
 (use-package use-package)
-; (require 'package)
-;   (setq package-enable-at-startup nil)
-;   (setq package-archives '(("org"  . "http://orgmode.org/elpa/")
-;                           ("gnu"   . "http://elpa.gnu.org/packages/")
-;                           ("melpa" . "http://melpa.org/packages/")))
-;   (package-initialize)
-;
-;   (unless (package-installed-p 'use-package)
-;     (package-refresh-colontents)
-;     (package-install 'use-package))
-;   (require 'use-package)
-;   (setq use-package-always-ensure t)
-;
-;
-;   (unless (package-installed-p 'quelpa)
-;     (with-temp-buffer
-;       (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
-;       (eval-buffer)
-;       (quelpa-self-upgrade)))
+(setq straight-use-package-by-default t)
 
 (message "Finished straight package manger configuration.") 
 
@@ -80,7 +57,7 @@
 (global-set-key "\C-cm" 'switch-to-minibuffer) ;; Bind to `C-c m' for minibuffer.
 
 ;;;# Bibtex configuration
-;(defconst blaine/bib-libraries (list "/Users/blaine/Documents/global.bib"))
+(defconst blaine/bib-libraries (list "/Users/blaine/Documents/global.bib"))
 
 ;;;# Combined with emacs-mac, this gives good PDF quality for [[https://www.aidanscannell.com/post/setting-up-an-emacs-playground-on-mac/][retina display]].
 (setq pdf-view-use-scaling t)
@@ -239,25 +216,30 @@
 (message "Finished global configuration.") 
 
 
-(message "Start package configurations C")
+(message "Start package configurations A")
+
+;;;# A
+(use-package auctex
+  :straight t
+  :defer t)
+  
+  (message "Start package configurations C")
+
 ;;;# C
 
-
-
-
-; (use-package citar
-;   :straight t
-;   :bind (("C-c b" . citar-insert-citation)
-;          :map minibuffer-local-map
-;          ("M-b" . citar-insert-preset))
-;   :custom
-;     (citar-bibliography '("/Users/blaine/Documents/global.bib"))
-;     (citar-library-paths '("/Users/blaine/0papersLabeled") '("/Users/blaine/0booksUnlabeled"))
-;     (citar-library-file-extensions '("pdf" "epub"))
-;   :hook
-;   ;; enable autocompletion in buffer of citekeys
-;     (LaTeX-mode . citar-capf-setup)
-;     (org-mode . citar-capf-setup))
+(use-package citar
+  :straight t
+  :bind (("C-c b" . citar-insert-citation)
+         :map minibuffer-local-map
+         ("M-b" . citar-insert-preset))
+  :custom
+    (citar-bibliography '("/Users/blaine/Documents/global.bib"))
+    (citar-library-paths '("/Users/blaine/0papersLabeled") '("/Users/blaine/0booksUnlabeled"))
+    (citar-library-file-extensions '("pdf" "epub"))
+  :hook
+  ;; enable autocompletion in buffer of citekeys
+    (LaTeX-mode . citar-capf-setup)
+    (org-mode . citar-capf-setup))
 
 
 (use-package company-box
@@ -306,35 +288,44 @@
 
 
 (message "Started L packages configurations")
+
+
+
+;; Install and configure lsp-mode
 (use-package lsp-mode
   :straight t
+  :commands (lsp lsp-deferred)
   :bind (:map lsp-mode-map
               ("C-c d" . lsp-describe-thing-at-point)
               ("C-c a" . lsp-execute-code-action))
   :bind-keymap ("C-c l" . lsp-command-map)
-  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
-         (latex-mode . lsp)
-         (lsp-mode . lsp-enable-which-key-integration))
+  :hook ((latex-mode . lsp-deferred)
+  (lsp-mode . lsp-enable-which-key-integration))
   :config
   (lsp-enable-which-key-integration t)
-  :commands lsp
-  )
- 
+  (setq lsp-headerline-breadcrumb-enable nil))
+
+;; Install and configure lsp-latex
+(use-package lsp-latex
+  :straight t
+  :after lsp-mode
+  :hook (latex-mode . lsp-latex-enable))
+
+;; Install and configure lsp-ltex
+(use-package lsp-ltex
+  :straight t
+  :after lsp-mode
+  :hook ((text-mode . lsp)
+         (latex-mode . lsp)
+         (org-mode . lsp))
+  :config
+  (setq lsp-ltex-language "en-US")
+  :init
+  (setq lsp-ltex-version "16.0.0"))
+   
 (use-package lsp-ui
     :straight t
     :commands lsp-ui-mode)
-
-(use-package lsp-latex
-    :straight t)
-
-;; language-tool integration
-(use-package lsp-ltex
-    :straight t
-    :hook (text-mode . (lambda ()
-                       (require 'lsp-ltex)
-                       (lsp)))          ; or lsp-deferred
-    :init
-    (setq lsp-ltex-version "16.0.0"))  ; make sure you have set this, see below
  
 (use-package lsp-treemacs 
        :straight t
@@ -354,7 +345,6 @@
 
 
 ;;;## BEGINNING of org-agenda
-(define-key org-mode-map (kbd "M-i") 'org-insert-item)
 (setq org-agenda-start-with-log-mode t)
 (setq org-log-done 'time)
 (setq org-log-into-drawer t)
@@ -391,62 +381,59 @@
    `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
    `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
 
-; (define-key global-map "\C-ca" 'org-agenda)
-; (setq org-log-done t)
-; ;; org-capture
-; (define-key global-map "\C-cc" 'org-capture)
-; (define-key global-map "\C-cl" 'org-store-link)
-;
-; (setq org-columns-default-format "%50ITEM(Task) %10CLOCKSUM %16TIMESTAMP_IA")
-;
-; (setq org-agenda-files '("/Users/blaine/gtd/tasks/JournalArticles.org"
-;                          "/Users/blaine/gtd/tasks/potentialWriting.org"
-;                          "/Users/blaine/gtd/tasks/Proposals.org"
-;                          ; "/Users/blaine/gtd/tasks/Books.org"
-;                          ; "/Users/blaine/gtd/tasks/Talks.org"
-;                          ; "/Users/blaine/gtd/tasks/Posters.org"
-;                          ; "/Users/blaine/gtd/tasks/ManuscriptReviews.org"
-;                          ; "/Users/blaine/gtd/tasks/Private.org"
-;                          ; "/Users/blaine/gtd/tasks/Service.org"
-;                          ; "/Users/blaine/gtd/tasks/Teaching.org"
-;                          ; "/Users/blaine/gtd/tasks/Workshops.org"
-;                          ; "/Users/blaine/gtd/tasks/springsem24.org"
-;                          ; "/Users/blaine/gtd/tasks/summersem24.org"
-;                          "/Users/blaine/gtd/tasks/fallsem24.org"))
-; (message "Finished org-agenda configuration. Line 5139.")
-;
-;
-; ;; Cycle through these keywords with shift right or left arrows.
-; (setq org-todo-keywords
-;         '((sequence "TODO(t)" "PLANNING(p)" "IN-PROGRESS(i@/!)"  "WAITING(w!)" "CAL(a)"  "PROJ(j)" "|" "DONE(d!)" "SOMEDAY(s!)" "CANCELLED(c!)"  )))
-;
-; ;; TODO colors OBE (Overcome by events)
-; (setq org-todo-keyword-faces
-;       '(
-;         ("TODO" . (:foreground "GoldenRod" :weight bold))
-;         ("PLANNING" . (:foreground "DeepPink" :weight bold))
-;         ("IN-PROGRESS" . (:foreground "Cyan" :weight bold))
-;         ("WAITING" . (:foreground "DarkOrange" :weight bold))
-;         ("CAL" . (:foreground "Red" :weight bold))
-;         ("PROJ" . (:foreground "LimeGreen" :weight bold))
-;         ("DONE" . (:foreground "LimeGreen" :weight bold))
-;         ("SOMEDAY" . (:foreground "LimeGreen" :weight bold))
-;         ("CANCELLED" . (:foreground "LightGray" :weight bold))
-;         ))
-;
-; ;; Remap the change priority keys to use the UP or DOWN key
-; (define-key org-mode-map (kbd "C-c <up>") 'org-priority-up)
-; (define-key org-mode-map (kbd "C-c <down>") 'org-priority-down)
-;
-; ;; When you want to change the level of an org item, use SMR
-; (define-key org-mode-map (kbd "C-c C-g C-r") 'org-shiftmetaright)
-;
-;
-; (setq org-refile-targets '(("/Users/blaine/gtd/tasks/JournalArticles.org" :maxlevel . 2)
-;    ("/Users/blaine/gtd/tasks/Proposals.org" :maxlevel . 2)
-;    ))
-; (setq org-refile-use-outline-path 'file)
-; (message "Finished refile target configuration. Line 5162.")
+
+
+
+
+
+(define-key global-map "\C-ca" 'org-agenda)
+(setq org-log-done t)
+;; org-capture
+(define-key global-map "\C-cc" 'org-capture)
+(define-key global-map "\C-cl" 'org-store-link)
+
+(setq org-columns-default-format "%50ITEM(Task) %10CLOCKSUM %16TIMESTAMP_IA")
+
+(setq org-agenda-files '("/Users/blaine/gtd/tasks/JournalArticles.org"
+                         "/Users/blaine/gtd/tasks/potentialWriting.org"
+                         "/Users/blaine/gtd/tasks/Proposals.org"
+                         ; "/Users/blaine/gtd/tasks/Books.org"
+                          "/Users/blaine/gtd/tasks/Talks.org"
+                         ; "/Users/blaine/gtd/tasks/Posters.org"
+                         ; "/Users/blaine/gtd/tasks/ManuscriptReviews.org"
+                          "/Users/blaine/gtd/tasks/Private.org"
+                         ; "/Users/blaine/gtd/tasks/Service.org"
+                         ; "/Users/blaine/gtd/tasks/Teaching.org"
+                         ; "/Users/blaine/gtd/tasks/Workshops.org"
+                         ; "/Users/blaine/gtd/tasks/springsem24.org"
+                         ; "/Users/blaine/gtd/tasks/summersem24.org"
+                         "/Users/blaine/gtd/tasks/fallsem24.org"))
+(message "Finished org-agenda configuration. Line 5139.")
+
+
+;; Cycle through these keywords with shift right or left arrows.
+(setq org-todo-keywords
+        '((sequence "TODO(t)" "PLANNING(p)" "IN-PROGRESS(i@/!)"  "WAITING(w!)" "CAL(a)"  "PROJ(j)" "|" "DONE(d!)" "SOMEDAY(s!)" "CANCELLED(c!)"  )))
+
+;; TODO colors OBE (Overcome by events)
+(setq org-todo-keyword-faces
+      '(
+        ("TODO" . (:foreground "GoldenRod" :weight bold))
+        ("PLANNING" . (:foreground "DeepPink" :weight bold))
+        ("IN-PROGRESS" . (:foreground "Cyan" :weight bold))
+        ("WAITING" . (:foreground "DarkOrange" :weight bold))
+        ("CAL" . (:foreground "Red" :weight bold))
+        ("PROJ" . (:foreground "LimeGreen" :weight bold))        
+        ("DONE" . (:foreground "LimeGreen" :weight bold))
+        ("SOMEDAY" . (:foreground "LimeGreen" :weight bold))
+        ("CANCELLED" . (:foreground "LightGray" :weight bold))
+        ))
+
+(setq org-refile-targets '(("/Users/blaine/gtd/tasks/JournalArticles.org" :maxlevel . 2)
+   ("/Users/blaine/gtd/tasks/Proposals.org" :maxlevel . 2)
+   ))
+(setq org-refile-use-outline-path 'file)
+(message "Finished refile target configuration. Line 5162.")
 
 ;; ***** customized agenda views
 ;;
@@ -469,18 +456,47 @@
 ;; In the meantime, enter ~C-c \~ inside JournalArticles.org to narrow the focus to the list of TODOs or enter ~C-c i b~ to get an indirect buffer.
 ;;
 
-; (setq org-agenda-custom-commands
-;       '(
-;     ("b"
-;              "List of all active 1019 tasks."
-;              tags-todo
-;              "1019\"/TODO|INITIATED|WAITING")
-;     ("P"
-;          "List of all projects"
-;          tags
-;          "LEVEL=2/PROJ")))
-;
-; (message "Finished org-agenda custum command configuration.")
+(setq org-agenda-custom-commands
+      '(
+    ("b"
+             "List of all active 1019 tasks."
+             tags-todo
+             "1019\"/TODO|INITIATED|WAITING")
+    ("c"
+             "List of all active 523 RNA-drug crystallization review paper tasks."
+             tags-todo
+             "CATEGORY=\"523\"/TODO|INITIATED|WAITING")
+    ("d"
+             "List of all active 0527CrystalDetectionByAI tasks."
+             tags-todo
+             "CATEGORY=\"527\"/TODO|INITIATED|WAITING") 
+    ("e"
+            "List of all active 0032RNA32merEditingSite tasks."
+            tags-todo
+            "CATEGORY=\"32\"/TODO|INITIATED|WAITING") 
+              
+    ("l"
+             "List of all active 0598tenRulesWritingProjectLog tasks."
+             tags-todo
+            "CATEGORY=\"598\"/TODO|INITIATED|WAITING")            
+    ("e"
+            "List of all active 0495emofat4mx tasks."
+            tags-todo
+            "CATEGORY=\"495\"/TODO|INITIATED|WAITING")            
+    ("r"
+            "List of all active 0466ReproDSD tasks."
+            tags-todo
+            "CATEGORY=\"515\"/TODO|INITIATED|WAITING")            
+    ("s"
+            "List of all active 0515CrystallizationSupports tasks."
+            tags-todo
+            "CATEGORY=\"515\"/TODO|INITIATED|WAITING")            
+    ("P"
+         "List of all projects"
+         tags
+         "LEVEL=2/PROJ")))
+
+(message "Finished org-agenda custum command configuration.")
 
 
 (message "Start package configurations P")
@@ -668,9 +684,9 @@
   :defer 2
   :bind ("C-c y" . hydra-yasnippet/body))
 
-; (use-package math-preview
-;     :straight t
-;     :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
+(use-package math-preview
+    :straight t
+    :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
 
 
 
