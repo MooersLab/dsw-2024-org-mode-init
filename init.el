@@ -34,6 +34,9 @@
   (goto-line line))
   
 
+;; enable mouse in terminal Emacs
+(when (eq window-system nil)
+      (xterm-mouse-mode t))
 
 ;;;# Minibuffer history keybindings
 ;; The calling up of a previously issued command in the minibuffer with ~M-p~ saves times.
@@ -83,7 +86,7 @@
 (use-package exec-path-from-shell
   :straight t
   :init
-  (setenv "SHELL" "/opt/local/bin/bash")
+  (setenv "SHELL" "/opt/local/bin/zsh")
   :if (memq window-system '(mac ns x))
   :config
   (setq exec-path-from-shell-variables '("PATH" "GOPATH" "PYTHONPATH"))
@@ -212,7 +215,23 @@
   (when ffap-file-at-point-line-number
     (goto-line ffap-file-at-point-line-number)
     (setq ffap-file-at-point-line-number nil)))
+    
+;; From video https://www.youtube.com/watch?v=X8c_TrGfYcM&t=15s using Emacs as a multiplexer."
+; (defun spawn-shell (name)
+;     "Create a new shell buffer taken from http://stackoverflow.com/a/4116113/446256."
+;     (interactive "MName of shell buffer to create: ")
+;     (pop-to-buffer (get-buffer-create (generate-new-buffer-name
+;     (shell (current-buffer)))
 
+
+(defun spawn-shell (name)
+  "Invoke shell test"
+  (interactive "MName of shell buffer to create: ")
+  (pop-to-buffer (get-buffer-create (generate-new-buffer-name name)))
+  (shell (current-buffer))
+  (process-send-string nil "echo 'test1'\n")
+  (process-send-string nil "echo 'test2'\n"))
+  
 (message "Finished global configuration.") 
 
 
@@ -358,28 +377,33 @@
 ;; Hide the markers so you just see bold text as BOLD-TEXT and not *BOLD-TEXT*
 (setq org-hide-emphasis-markers t)
 
-;; Stoup's fonts for org
-(let* ((variable-tuple
-        (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
-              ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
-              ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
-              ((x-list-fonts "Verdana")         '(:font "Verdana"))
-              ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
-              (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
-       (base-font-color     (face-foreground 'default nil 'default))
-       (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+; ;; Stoup's fonts for org
+; (let* ((variable-tuple
+;         (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
+;               ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+;               ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+;               ((x-list-fonts "Verdana")         '(:font "Verdana"))
+;               ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+;               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+;        (base-font-color     (face-foreground 'default nil 'default))
+;        (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+;
+;   (custom-theme-set-faces
+;    'user
+;    `(org-level-8 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-7 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-6 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-5 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+;    `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
+;    `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
+;    `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
+;    `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
 
-  (custom-theme-set-faces
-   'user
-   `(org-level-8 ((t (,@headline ,@variable-tuple))))
-   `(org-level-7 ((t (,@headline ,@variable-tuple))))
-   `(org-level-6 ((t (,@headline ,@variable-tuple))))
-   `(org-level-5 ((t (,@headline ,@variable-tuple))))
-   `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
-   `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
-   `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
-   `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
-   `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
+
+
+
+
 
 
 
@@ -391,24 +415,31 @@
 ;; org-capture
 (define-key global-map "\C-cc" 'org-capture)
 (define-key global-map "\C-cl" 'org-store-link)
+(global-set-key (kbd "C-c v") 'org-refile)
 
 (setq org-columns-default-format "%50ITEM(Task) %10CLOCKSUM %16TIMESTAMP_IA")
 
-(setq org-agenda-files '("/Users/blaine/gtd/tasks/JournalArticles.org"
-                         "/Users/blaine/gtd/tasks/potentialWriting.org"
+(setq org-agenda-files '("/Users/blaine/.notes"
+                         "/Users/blaine/gtd/tasks/JournalArticles.org"
+                         "/Users/blaine/0573CrystalDetectionMeasurement/log0573.org"
+                         "/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org"
                          "/Users/blaine/gtd/tasks/Proposals.org"
-                         ; "/Users/blaine/gtd/tasks/Books.org"
-                          "/Users/blaine/gtd/tasks/Talks.org"
-                         ; "/Users/blaine/gtd/tasks/Posters.org"
-                         ; "/Users/blaine/gtd/tasks/ManuscriptReviews.org"
-                          "/Users/blaine/gtd/tasks/Private.org"
-                         ; "/Users/blaine/gtd/tasks/Service.org"
-                         ; "/Users/blaine/gtd/tasks/Teaching.org"
-                         ; "/Users/blaine/gtd/tasks/Workshops.org"
-                         ; "/Users/blaine/gtd/tasks/springsem24.org"
-                         ; "/Users/blaine/gtd/tasks/summersem24.org"
+			             "/Users/blaine/1019NIHemofat/cb/log1019.org"
+                         "/Users/blaine/gtd/tasks/Books.org"
+                         "/Users/blaine/gtd/tasks/Talks.org"
+                         "/Users/blaine/gtd/tasks/Posters.org"
+                         "/Users/blaine/gtd/tasks/ManuscriptReviews.org"
+                         "/Users/blaine/gtd/tasks/Private.org"
+                         "/Users/blaine/gtd/tasks/Service.org"
+                         "/Users/blaine/gtd/tasks/Teaching.org"
+                         "/Users/blaine/gtd/tasks/Workshops.org"
+                         "/Users/blaine/gtd/tasks/springsem24.org"
+                         "/Users/blaine/gtd/tasks/summersem24.org"
                          "/Users/blaine/gtd/tasks/fallsem24.org"))
 (message "Finished org-agenda configuration. Line 5139.")
+
+
+
 
 
 ;; Cycle through these keywords with shift right or left arrows.
@@ -418,21 +449,71 @@
 ;; TODO colors OBE (Overcome by events)
 (setq org-todo-keyword-faces
       '(
-        ("TODO" . (:foreground "GoldenRod" :weight bold))
+        ("TODO" . (:foreground "Red" :weight bold))
         ("PLANNING" . (:foreground "DeepPink" :weight bold))
         ("IN-PROGRESS" . (:foreground "Cyan" :weight bold))
         ("WAITING" . (:foreground "DarkOrange" :weight bold))
-        ("CAL" . (:foreground "Red" :weight bold))
+        ("CAL" . (:foreground "GoldenOrange" :weight bold))
         ("PROJ" . (:foreground "LimeGreen" :weight bold))        
         ("DONE" . (:foreground "LimeGreen" :weight bold))
         ("SOMEDAY" . (:foreground "LimeGreen" :weight bold))
         ("CANCELLED" . (:foreground "LightGray" :weight bold))
         ))
 
-(setq org-refile-targets '(("/Users/blaine/gtd/tasks/JournalArticles.org" :maxlevel . 2)
-   ("/Users/blaine/gtd/tasks/Proposals.org" :maxlevel . 2)
-   ))
+;; With this setup, you can press C-c t (or whatever key binding you choose) to prompt for a tag and a TODO item. The function will then search for the heading with the specified tag and append the TODO item at the bottom of the TODO list under that heading.
+; (setq my-org-refile-directories '(
+;    ("/Users/blaine/gtd/tasks/JournalArticles.org" :maxlevel . 3)
+;    ("/Users/blaine/gtd/tasks/Proposals.org" :maxlevel . 3)
+;    ("/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org" :maxlevel . 3)
+;    ))
+ 
+ 
+(setq my-org-refile-targets '(
+    ("/Users/blaine/0573CrystalDetectionMeasurement/log0573.org" :maxlevel . 3)		             
+    ("/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org" :maxlevel . 3)
+    ("/Users/blaine/1019NIHemofat/cb/log1019.org" :maxlevel . 3)
+   )) 
+ 
+   
+(defun my-select-org-refile-target ()
+     "Prompt for an org refile target from a list of directories."
+     (interactive)
+     (let ((target (completing-read "Select refile target: " my-org-refile-targets)))
+       (setq my-org-refile-targets `((,target :maxlevel . 3)))))
+
+; (defun my-append-todo-to-heading (tag todo-text)
+;      "Append TODO-TEXT to the bottom of a TODO list under a heading with TAG."
+;          (interactive "sTag: \nsTODO: ")
+;          (save-excursion
+;            (goto-char (point-min))
+;            (if (re-search-forward (format "^\*+ .* :%s:" tag) nil t)
+;                (progn
+;                  (org-end-of-subtree t t)
+;                  (insert (format "\n** TODO %s" todo-text)))
+;              (message "Heading with tag %s not found" tag))))
+
+
+(defun my-append-todo-to-heading (tag todo-text)
+     "Append TODO-TEXT to the bottom of a TODO list under a heading with TAG. Enter the tag without the flanking colons."
+         (interactive "sTag: \nsTODO: ")
+         (save-excursion
+           (goto-char (point-min))
+           (if (re-search-forward (format "^\*+ .* :%s:" tag) nil t)
+               (progn
+                 (org-end-of-subtree t t)
+                 (insert (format "*** TODO %s \n" todo-text)))
+             (message "Heading with tag %s not found" tag))))
+
+
+;; Example key binding
+(global-set-key (kbd "C-c t") 'my-append-todo-to-heading)
+
+   
 (setq org-refile-use-outline-path 'file)
+
+;; Example key binding
+(global-set-key (kbd "C-c r") 'my-select-org-refile-target)
+
 (message "Finished refile target configuration. Line 5162.")
 
 ;; ***** customized agenda views
@@ -514,14 +595,22 @@
  :custom
  (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
 
+ 
+ 
+ 
+(message "Start package configurations S")
 
- (message "Start package configurations T")
+; (straight-use-package
+;   '(showkey :type git :local-repo "~/e29fewpackages/manual-install/showkey"))
+; (set-face-attribute 'default nil :height 240)
+; (require 'showkey)
 
- ;; C-x t t to launch treemacs
- ;; Support dragging files from the treemacs directory to a buffer to open them.
- ;; Default configuration for treemacs minus the treemacs-evil pacakge.
- ;; 
- (use-package treemacs
+(message "Start package configurations T")
+
+(use-package tmux-pane
+   :straight (tmux-pane :type git :host github :repo "laishulu/emacs-tmux-pane"))
+
+(use-package treemacs
    :straight t
    :defer t
    :init
@@ -611,60 +700,67 @@
          ("C-x t C-t" . treemacs-find-file)
          ("C-x t M-t" . treemacs-find-tag)))
 
- (use-package treemacs-projectile
-   :after (treemacs projectile)
-   :straight t)
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :straight t)
 
- (use-package treemacs-icons-dired
-   :hook (dired-mode . treemacs-icons-dired-enable-once)
-   :straight t)
+(use-package treemacs-icons-dired
+  :hook (dired-mode . treemacs-icons-dired-enable-once)
+  :straight t)
 
- ; (use-package treemacs-magit
- ;   :after (treemacs magit)
- ;   :straight t)
+;; (use-package treemacs-magit
+;;   :after (treemacs magit)
+;;   :straight t)
 
- (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-   :after (treemacs persp-mode) ;;or perspective vs. persp-mode
-   :straight t
-   :config (treemacs-set-scope-type 'Perspectives))
+(use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
+  :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+  :straight t
+  :config (treemacs-set-scope-type 'Perspectives))
 
- ; (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
- ;   :after (treemacs)
- ;   :straight t
- ;   :config (treemacs-set-scope-type 'Tabs))
+;; (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
+;;   :after (treemacs)
+;;   :straight t
+;;   :config (treemacs-set-scope-type 'Tabs))
 
- (treemacs-start-on-boot)
+(treemacs-start-on-boot)
+
 (message "End package configurations T")
-
 
 (message "Start package configurations U")
 (use-package undo-tree
   :straight t
   :config
-  (global-undo-tree-mode 1))
-
+  (global-undo-tree-mode 1)) 
+   
 
 (message "Start package configurations V")
 ;;;# V
+
+;;;# vterm
+;; See https://github.com/akermu/emacs-libvterm for configuration of init.el and .zshrc
+(use-package vterm
+  :straight t)
+
+(define-key vterm-mode-map (kbd "C-q") #'vterm-send-next-key)
+
 ;;;## Vertico Configuration
 (use-package vertico
   :straight t
   :init
   (vertico-mode)
-
   ;; Different scroll margin
   ;; (setq vertico-scroll-margin 0)
-
   ;; Show more candidates
   (setq vertico-count 20)
-
   ;; Grow and shrink the Vertico minibuffer
   (setq vertico-resize t)
-
   ;; Optionally enable cycling for `vertico-next' and `vertico-previous'.
-  (setq vertico-cycle t)
-  )
+  (setq vertico-cycle t))
 
+(message "Start package configurations W")
+(straight-use-package
+ '(weatherline-mode :type git :local-repo "~/e29fewpackages/manual-install/weatherline-mode"))
+(require 'weatherline-mode)
 
 (message "Start package configurations Y")
 
@@ -676,8 +772,6 @@
 (global-set-key "\C-c y i" 'yas-insert-snippet)
 (global-set-key "\C-c y n" 'yas-new-snippet)
 
-
-
 ;; A cool hydra for finding snippets at point. Invoke with C-c y.
 (use-package hydra
   :straight t     
@@ -685,18 +779,14 @@
   :bind ("C-c y" . hydra-yasnippet/body))
 
 (use-package math-preview
-    :straight t
-    :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
-
-
+  :straight t
+  :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
 
 (use-package popup
-      :straight t )
-;; add some shotcuts in popup menu mode
+  :straight t)
+;; add some shortcuts in popup menu mode
 (define-key popup-menu-keymap (kbd "M-n") 'popup-next)
 (define-key popup-menu-keymap (kbd "TAB") 'popup-next)
-(define-key popup-menu-keymap (kbd "<tab>") 'popup-next)
-(define-key popup-menu-keymap (kbd "<backtab>") 'popup-previous)
 (define-key popup-menu-keymap (kbd "M-p") 'popup-previous)
 
 (defun yas/popup-isearch-prompt (prompt choices &optional display-fn)
@@ -711,21 +801,29 @@
       choices)
      :prompt prompt
      ;; start isearch mode immediately
-     :isearch t
-     )))
+     :isearch t)))
 (setq yas/prompt-functions '(yas/popup-isearch-prompt yas/no-prompt))
 
-    
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(pdf-view-incompatible-modes
-   '(linum-mode linum-relative-mode helm-linum-relative-mode nlinum-mode nlinum-hl-mode nlinum-relative-mode yalinum-mode)))
+   '(linum-mode linum-relative-mode helm-linum-relative-mode nlinum-mode nlinum-hl-mode nlinum-relative-mode yalinum-mode))
+ '(showkey-log-mode t)
+ '(weatherline-mode t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(org-document-title ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.6 :underline nil))))
+ '(org-level-1 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.5))))
+ '(org-level-2 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.3))))
+ '(org-level-3 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.2))))
+ '(org-level-4 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.1))))
+ '(org-level-5 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-6 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-7 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-8 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande")))))
