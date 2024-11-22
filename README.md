@@ -3,7 +3,7 @@
 
 # Emacs configuration file for writing research papers in Org-mode 
 
-This presentation is for the 2024 November 22 meeting of the Oklahoma Data Science Workshop.
+This presentation is for the 2024 November 22 Oklahoma Data Science Workshop meeting.
 
 This configuration file, `init.el`, focuses on writing research papers in org-mode in `GNU Emacs`.
 It was meant to use default settings, but I included packages I enjoy using (e.g., treemacs, undo-tree, vertico, marginalia, citar, yasnippets, pdf-tools).
@@ -31,7 +31,6 @@ Start emacs with the init-directory flag pointing to your Emacs configuration fo
 
 - Give the Emacs several minutes to install about 60 packages during startup.
 - Startup time will be about 10 seconds in future startups.
-- If you wish to use org-agenda, uncomment and configure the file paths of the org-agenda section.
 - If commented out three packages that require customized file paths. Edit these to suit your workflow.
 - I map the above command to the zsh alias `e29f`. 
 ```bash
@@ -45,12 +44,12 @@ I use `e29f +500 logXXXX.org` to open `logXXXX.org` in the current directory on 
   
 ## Update history
 
-|Version      | Changes                                                                                                                                 | Date                 |
-|:-----------|:-----------------------------------------------------------------------------------------------------------------------------------------|:--------------------|
+|Version      | Changes                                                                                                                                 | Date              |
+|:------------|:----------------------------------------------------------------------------------------------------------------------------------------|:------------------|
 | Version 0.1 |   Added badges, funding, and update table.  Initial commit.                                                                             | 2024 November 10  |
 | Version 0.2 |   Minor edits                                                                                                                           | 2024 November 22  |
 
-## Aknowledgements
+## Acknowledgments
 ### Sources of funding
 
 - NIH: R01 CA242845
