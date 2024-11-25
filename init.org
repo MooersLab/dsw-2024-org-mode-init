@@ -1,6 +1,5 @@
 #+TITLE: Emacs Configuration
 #+AUTHOR: Your Name
-#+OPTIONS: toc:nil
 
 * The org-mode verson of the ~few packages~ init.el configuration available at https://github.com/MooersLab/dsw-2024-org-mode-init.
 - The number of semicolons indicates the headline level.
