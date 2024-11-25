@@ -573,7 +573,7 @@ This can be complex to configure.
 ***** Stoup's fonts for org
 These settings have been added to the customization section.
 They can only be called once in an init.el file.
-#+BEGIN-COMMENT
+#+BEGIN_COMMENT
 (let* ((variable-tuple
 (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
 ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
