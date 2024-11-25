@@ -240,7 +240,7 @@ To use this function, select the region containing the LaTeX list and run:
 #+END_SRC
 
 
-### Open the Daily Log headline while keeping the other headline closed.
+*** Open the Daily Log headline while keeping the other headline closed.
 #+BEGIN_SRC emacs-lisp
 (defun org-open-specific-headline (headline)
 "Open the specific top-level HEADLINE while keeping others closed."
