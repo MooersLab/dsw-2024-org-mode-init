@@ -350,21 +350,19 @@ Also see `prot-window-delete-popup-frame'." command)
 (prot-window-define-with-popup-frame org-capture)
 (add-hook 'org-capture-after-finalize-hook #'prot-window-delete-popup-frame)
 #+END_SRC
+Another popup function for use with the tmr package.
+#+BEGIN_SRC emacs-lisp
 (declare-function tmr "tmr" (time &optional description acknowledgep))
 (defvar tmr-timer-created-functions)
-
-;;;###autoload (autoload 'prot-window-popup-tmr "prot-window")
+;; (autoload 'prot-window-popup-tmr "prot-window")
 (prot-window-define-with-popup-frame tmr)
 (add-hook 'tmr-timer-created-functions #'prot-window-delete-popup-frame)
-#+BEGIN_SRC emacs-lisp
-
 #+END_SRC
 ***** The emacsclient calls that need ot be bound to system-wide keys
 The emacsclient is an Emac version agnostic.
+#+BEGIN_SRC bash
 `alias oc="emacslient -e '(prot-window-popup-org-capture)'"`
 `emacsclient -e '(prot-window-popup-tmr)'`
-#+BEGIN_SRC emacs-lisp
-
 #+END_SRC
 *** Reload the initialization file after editing it in Emacs
 #+BEGIN_SRC emacs-lisp
@@ -372,8 +370,6 @@ The emacsclient is an Emac version agnostic.
   "Reload the init.el file for e29org. Edit the path to suite your needs."
   (interactive)
   (load-file "~/e29fewpackages/init.el"))
-  
-
 #+END_SRC
 *** Spawn a new shell with the supplied title
 #+BEGIN_SRC emacs-lisp
@@ -475,11 +471,7 @@ Source: https://github.com/Exafunction/codeium.el
    company-idle-delay 0.05
    company-require-match nil
    company-minimum-prefix-length 1
-#+END_SRC
-***** get only preview
-***** company-frontends '(company-preview-frontend)
-***** also get a drop down
-#+BEGIN_SRC emacs-lisp
+   company-frontends '(company-preview-frontend)
    company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend)
    ))
 (message "Finished C package configurations")
