@@ -3,7 +3,7 @@
 
 * The org-mode verson of the ~few packages~ init.el configuration available at https://github.com/MooersLab/dsw-2024-org-mode-init.
 - The number of semicolons indicates the headline level.
-- The combintatoin of a semicolon and a precent sign denotes a comment to be converted to prose in the org file.
+- The combination of a semicolon and a percent sign denotes a comment to be converted to prose in the org file.
 - The lines without semicolons in the left margin wind up in code blocks.
 
 - I use the bash command  alias e29f='/Applications/Emacs29.4.app/Contents/MacOS/Emacs --init-directory ~/e29fewpackages --debug-init'
