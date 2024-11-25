@@ -138,7 +138,6 @@ Optionally specify the file to save cursor positions
 ** Start user-defined functions section
 #+BEGIN_SRC emacs-lisp
 (message "User defined functions in alphabetical order.") 
-
 #+END_SRC
 *** create-org-table-with-caption
 This interactive function prompts the user for the number of rows, columns, and caption of the table.
@@ -156,9 +155,6 @@ This interactive function prompts the user for the number of rows, columns, and 
     (dotimes (_ cols)
       (insert "----+"))
     (insert "\n|")
-#+END_SRC
-****** (insert "|")
-#+BEGIN_SRC emacs-lisp
     (dotimes (col cols)
       (insert (format " %c |" (+ ?A col))))
     (insert "\n|")
@@ -175,7 +171,7 @@ This interactive function prompts the user for the number of rows, columns, and 
       (insert "----+"))))
 #+END_SRC
 *** find file and go to line number
-interactively enter the file name and line number in the minibuffer
+Interactively enter the file name and line number in the minibuffer
 #+BEGIN_SRC emacs-lisp
 (defun find-file-at-line (file line)
   "Open FILE on LINE."
@@ -232,7 +228,7 @@ The function prompts the user for the image file path and name, the label, and t
 #+END_SRC
 *** Convert a selected latex list of items to a org-mode list
 To use this function, select the region containing the LaTeX list and run:
-M-x latex-to-org-list-region
+`M-x latex-to-org-list-region`
 #+BEGIN_SRC emacs-lisp
 (defun latex-to-org-list-region (start end)
   "Convert a LaTeX itemize list in the region to an Org-mode list."
@@ -242,7 +238,10 @@ M-x latex-to-org-list-region
     (while (re-search-forward "\\\\item" end t)
       (replace-match "-"))))
 #+END_SRC
-;;; Open the Daily Log headline while keeping the other headline closed.
+
+
+### Open the Daily Log headline while keeping the other headline closed.
+#+BEGIN_SRC emacs-lisp
 (defun org-open-specific-headline (headline)
 "Open the specific top-level HEADLINE while keeping others closed."
 (goto-char (point-min))
@@ -265,6 +264,7 @@ M-x latex-to-org-list-region
 (if (re-search-forward (format "^\\*\\* .*:%s:" tag) nil t)
 (forward-line -1)
 (message "Tag not found")))))
+#+END_SRC
 
 ;defun org-open-specific-headline (headline)
 ; "Open the specific top-level HEADLINE while keeping others closed.
@@ -287,10 +287,11 @@ M-x latex-to-org-list-region
 (run-at-time "0.1 sec" nil 'my-open-log-file-and-move-above-tag))
 
 (add-hook 'org-mode-hook 'my-delayed-org-setup)
+
 *** Open a file and move to a headline with a specific tag
 The default tag is restart-here.
 Example usage:
-(open-org-file-and-move-to-tag "~/path/to/your/file.org" "your-tag")
+`(open-org-file-and-move-to-tag "~/path/to/your/file.org" "your-tag")`
 #+BEGIN_SRC emacs-lisp
 (defun open-org-file-and-move-to-tag (file &optional tag)
   "Open an Org file and move the cursor below a headline with a specific TAG.
