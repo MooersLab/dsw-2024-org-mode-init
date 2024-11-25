@@ -49,6 +49,7 @@ I use `e29f +500 logXXXX.org` to open `logXXXX.org` in the current directory on 
 |:------------|:----------------------------------------------------------------------------------------------------------------------------------------|:------------------|
 | Version 0.1 |   Added badges, funding, and update table.  Initial commit.                                                                             | 2024 November 10  |
 | Version 0.2 |   Minor edits                                                                                                                           | 2024 November 22  |
+| Version 0.3 |   Add init file in org-mode format for rendering by GitHub.                                                                             | 2024 November 25  |
 
 ## Acknowledgments
 ### Sources of funding
