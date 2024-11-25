@@ -255,6 +255,7 @@ To use this function, select the region containing the LaTeX list and run:
 (add-hook 'org-mode-hook 'my-org-mode-setup)
 ;;; Moves cursor to headline with the restart tag.
 ;%  Waits for the  my-org-mode-setup function to run first.
+
 (defun my-open-log-file-and-move-above-tag ()
 "If the current buffer's file name starts with 'log', move the cursor above a second-level headline with a specific tag."
 (let ((tag "restart-here"))
@@ -264,8 +265,6 @@ To use this function, select the region containing the LaTeX list and run:
 (if (re-search-forward (format "^\\*\\* .*:%s:" tag) nil t)
 (forward-line -1)
 (message "Tag not found")))))
-#+END_SRC
-
 ;defun org-open-specific-headline (headline)
 ; "Open the specific top-level HEADLINE while keeping others closed.
 ;hen move the cursor to the line above the second-level headline with the tag."
@@ -278,15 +277,15 @@ To use this function, select the region containing the LaTeX list and run:
 ;         (beginning-of-line)
 ;         (forward-line -1)))
 ;   (message "Headline not found")))
-
-
-
+#+END_SRC
+*** my-delayed-org-setup
+#+BEGIN_SRC emacs-lisp
 (defun my-delayed-org-setup ()
 "Run my-org-mode-setup and then my-open-log-file-and-move-above-tag."
 (my-org-mode-setup)
 (run-at-time "0.1 sec" nil 'my-open-log-file-and-move-above-tag))
-
 (add-hook 'org-mode-hook 'my-delayed-org-setup)
+#+END_SRC
 
 *** Open a file and move to a headline with a specific tag
 The default tag is restart-here.
