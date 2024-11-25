@@ -1,0 +1,1061 @@
+#+TITLE: Emacs Configuration
+#+AUTHOR: Your Name
+#+OPTIONS: toc:nil
+
+* The org-mode verson of the ~few packages~ init.el configuration available at https://github.com/MooersLab/dsw-2024-org-mode-init.
+- The number of semicolons indicates the headline level.
+- The combintatoin of a semicolon and a precent sign denotes a comment to be converted to prose in the org file.
+- The lines without semicolons in the left margin wind up in code blocks.
+
+- I use the bash command  alias e29f='/Applications/Emacs29.4.app/Contents/MacOS/Emacs --init-directory ~/e29fewpackages --debug-init'
+
+** The top section sets up the package management software and must come first.
+#+BEGIN_SRC emacs-lisp
+(setq user-emacs-directory "~/e29fewpackages/")
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name
+        "straight/repos/straight.el/bootstrap.el"
+        (or (bound-and-true-p straight-base-dir)
+            user-emacs-directory)))
+      (bootstrap-version 7))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+(straight-use-package 'org)
+(setq package-enable-at-startup nil)
+(use-package use-package)
+(setq straight-use-package-by-default t)
+#+END_SRC
+Messages printed to the messages buffer aid in locating bugs in the config file because the bug is somewhere beyond the last message.
+#+BEGIN_SRC emacs-lisp
+(message "Finished straight package manager configuration.") 
+#+END_SRC
+# ***************************** Global Settings section ***********************************************
+** Global Settings
+The order of the remaining content of the intial.org does not matter but I like to divide it into settings, user-defined functions, and packages.
+#+BEGIN_SRC emacs-lisp
+(message "Start global configuration.") 
+#+END_SRC
+*** Enable mouse in terminal Emacs (emacs -nw)
+#+BEGIN_SRC emacs-lisp
+(when (eq window-system nil)
+      (xterm-mouse-mode t))
+#+END_SRC
+*** Minibuffer history keybindings
+The calling up of a previously issued command in the minibuffer with ~M-p~ saves times.
+#+BEGIN_SRC emacs-lisp
+(autoload 'edit-server-maybe-dehtmlize-buffer "edit-server-htmlize" "edit-server-htmlize" t)
+(autoload 'edit-server-maybe-htmlize-buffer "edit-server-htmlize" "edit-server-htmlize" t)
+(add-hook 'edit-server-start-hook 'edit-server-maybe-dehtmlize-buffer)
+(add-hook 'edit-server-done-hook  'edit-server-maybe-htmlize-buffer)
+(define-key minibuffer-local-map (kbd "M-p") 'previous-complete-history-element)
+(define-key minibuffer-local-map (kbd "M-n") 'next-complete-history-element)
+(define-key minibuffer-local-map (kbd "<up>") 'previous-complete-history-element)
+(define-key minibuffer-local-map (kbd "<down>") 'next-complete-history-element)
+#+END_SRC
+*** Bibtex configuration
+#+BEGIN_SRC emacs-lisp
+(defconst blaine/bib-libraries (list "/Users/blaine/Documents/global.bib"))
+#+END_SRC
+*** For retina displays on Macs
+TCombined with emacs-mac, this gives good PDF quality for [[https://www.aidanscannell.com/post/setting-up-an-emacs-playground-on-mac/][retina display]].
+#+BEGIN_SRC emacs-lisp
+(setq pdf-view-use-scaling t)
+#+END_SRC
+*** PDF default page width behavior
+#+BEGIN_SRC emacs-lisp
+(setq-default pdf-view-display-size 'fit-page)
+#+END_SRC
+*** Custom key sequences.
+Delete trailing whitespaces on lines.
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-c d") 'delete-trailing-whitespace)
+#+END_SRC
+*** display line numbers. Need with s-l.
+#+BEGIN_SRC emacs-lisp
+(global-display-line-numbers-mode)
+#+END_SRC
+*** highlight current line
+This feature aids finding the cursor's current position.
+#+BEGIN_SRC emacs-lisp
+(global-hl-line-mode +1)
+(set-face-background hl-line-face "wheat1")
+(set-face-attribute 'mode-line nil  :height 180)
+#+END_SRC
+*** Shell configuration
+Let Emacs know which shell that you are using.
+#+BEGIN_SRC emacs-lisp
+(use-package exec-path-from-shell
+  :straight t
+  :init
+  (setenv "SHELL" "/opt/local/bin/zsh")
+  :if (memq window-system '(mac ns x))
+  :config
+  (setq exec-path-from-shell-variables '("PATH" "GOPATH" "PYTHONPATH"))
+  (exec-path-from-shell-initialize))
+#+END_SRC
+*** Set size of the starting Window
+I like a wider window. Setting it initially saves an operation.
+#+BEGIN_SRC emacs-lisp
+(setq initial-frame-alist '((top . 1)
+                (left . 450)
+                (width . 101)
+                (height . 90)))
+#+END_SRC
+*** Setting modifier keys
+==> adjust here for operating system
+See this [[http://ergoemacs.org/emacs/emacs_hyper_super_keys.html][ for more information.]]
+set keys for Apple keyboard, for emacs in OS X
+Source http://xahlee.info/emacs/emacs/emacs_hyper_super_keys.html
+Seems to only work in the GUI mode.
+#+BEGIN_SRC emacs-lisp
+(setq mac-command-modifier 'meta) ; make cmd key do Meta
+(setq mac-option-modifier 'super) ; make option key do Super.
+(setq mac-control-modifier 'control) ; make Control key do Control
+(setq mac-function-modifier 'hyper)  ; make Fn key do Hyper. Only works on Apple produced keyboards.
+(setq mac-right-command-modifier 'hyper)
+#+END_SRC
+*** Move cursor to place at last save
+Enable save-place-mode
+#+BEGIN_SRC emacs-lisp
+(save-place-mode 1)
+#+END_SRC
+Optionally specify the file to save cursor positions
+#+BEGIN_SRC emacs-lisp
+(setq save-place-file "~/e29fewpackages/places")
+#+END_SRC
+*** Setting section is finished
+#+BEGIN_SRC emacs-lisp
+(message "Finished settings configuration.") 
+#+END_SRC
+# ***************************** User-defined functions section ***********************************************
+** Start user-defined functions section
+#+BEGIN_SRC emacs-lisp
+(message "User defined functions in alphabetical order.") 
+
+#+END_SRC
+*** create-org-table-with-caption
+This interactive function prompts the user for the number of rows, columns, and caption of the table.
+#+BEGIN_SRC emacs-lisp
+(defun create-org-table-with-caption ()
+"This interactive function prompts the user for the number of rows. columns, and the caption of the table."
+  (interactive)
+  (let ((rows (read-number "Enter the number of rows: "))
+        (cols (read-number "Enter the number of columns: "))
+        (label (read-string "Enter the table label: "))
+        (caption (read-string "Enter the table's caption: ")))
+    (insert (format "#+CAPTION: %s \\label{%s}\n" caption label))
+    (insert (format "#+NAME: %s\n" label))
+    (insert "|")
+    (dotimes (_ cols)
+      (insert "----+"))
+    (insert "\n|")
+#+END_SRC
+****** (insert "|")
+#+BEGIN_SRC emacs-lisp
+    (dotimes (col cols)
+      (insert (format " %c |" (+ ?A col))))
+    (insert "\n|")
+    (dotimes (_ cols)
+      (insert "----+"))
+    (insert "\n")
+    (dotimes (_ rows)
+      (insert "|")
+      (dotimes (_ cols)
+        (insert "     |"))
+      (insert "\n"))
+    (insert "|")
+    (dotimes (_ cols)
+      (insert "----+"))))
+#+END_SRC
+*** find file and go to line number
+interactively enter the file name and line number in the minibuffer
+#+BEGIN_SRC emacs-lisp
+(defun find-file-at-line (file line)
+  "Open FILE on LINE."
+  (interactive "fFile: \nNLine: \n")
+  (find-file file)
+  (goto-line line))
+
+#+END_SRC
+*** ffap: find file at point
+https://unix.stackexchange.com/questions/691444/how-do-i-open-a-file-at-specific-line-in-a-running-emacs
+have ffap pick up line number and goto-line
+found on emacswiki : https://www.emacswiki.org/emacs/FindFileAtPoint#h5o-6
+#+BEGIN_SRC emacs-lisp
+(defvar ffap-file-at-point-line-number nil
+  "Variable to hold line number from the last `ffap-file-at-point' call.")
+(defadvice ffap-file-at-point (after ffap-store-line-number activate)
+  "Search `ffap-string-at-point' for a line number pattern and
+    save it in `ffap-file-at-point-line-number' variable."
+  (let* ((string (ffap-string-at-point)) ;; string/name definition copied from `ffap-string-at-point'
+         (name
+          (or (condition-case nil
+                  (and (not (string-match "//" string)) ; foo.com://bar
+                       (substitute-in-file-name string))
+                (error nil))
+              string))
+         (line-number-string 
+          (and (string-match ":[0-9]+" name)
+               (substring name (1+ (match-beginning 0)) (match-end 0))))
+         (line-number
+          (and line-number-string
+               (string-to-number line-number-string))))
+    (if (and line-number (> line-number 0)) 
+        (setq ffap-file-at-point-line-number line-number)
+      (setq ffap-file-at-point-line-number nil))))
+
+(defadvice find-file-at-point (after ffap-goto-line-number activate)
+  "If `ffap-file-at-point-line-number' is non-nil goto this line."
+  (when ffap-file-at-point-line-number
+    (goto-line ffap-file-at-point-line-number)
+    (setq ffap-file-at-point-line-number nil)))
+#+END_SRC
+*** insert-org-captioned-figure
+The function prompts the user for the image file path and name, the label, and the caption.
+#+BEGIN_SRC emacs-lisp
+(defun insert-org-captioned-figure ()
+  "Insert a captioned figure in Org-mode."
+  (interactive)
+  (let ((image-name (read-string "Enter the image file path: "))
+        (label (read-string "Enter the figure label: "))
+        (caption (read-string "Enter the figure caption: ")))
+    (insert (format "#+CAPTION: %s \\label{%s}\n" caption label))
+    (insert (format "#+NAME: %s\n" label))
+    (insert (format "[[file:%s]]\n" image-name))))
+#+END_SRC
+*** Convert a selected latex list of items to a org-mode list
+To use this function, select the region containing the LaTeX list and run:
+M-x latex-to-org-list-region
+#+BEGIN_SRC emacs-lisp
+(defun latex-to-org-list-region (start end)
+  "Convert a LaTeX itemize list in the region to an Org-mode list."
+  (interactive "r")
+  (save-excursion
+    (goto-char start)
+    (while (re-search-forward "\\\\item" end t)
+      (replace-match "-"))))
+#+END_SRC
+;;; Open the Daily Log headline while keeping the other headline closed.
+(defun org-open-specific-headline (headline)
+"Open the specific top-level HEADLINE while keeping others closed."
+(goto-char (point-min))
+(org-overview)
+(if (re-search-forward (format "^\\* %s" (regexp-quote headline)) nil t)
+(org-show-children 3)
+(message "Headline not found")))
+(defun my-org-mode-setup ()
+"Custom setup for Org mode."
+(org-open-specific-headline "Daily Log"))
+(add-hook 'org-mode-hook 'my-org-mode-setup)
+;;; Moves cursor to headline with the restart tag.
+;%  Waits for the  my-org-mode-setup function to run first.
+(defun my-open-log-file-and-move-above-tag ()
+"If the current buffer's file name starts with 'log', move the cursor above a second-level headline with a specific tag."
+(let ((tag "restart-here"))
+(when (and buffer-file-name
+(string-prefix-p "log" (file-name-nondirectory buffer-file-name)))
+(goto-char (point-min))
+(if (re-search-forward (format "^\\*\\* .*:%s:" tag) nil t)
+(forward-line -1)
+(message "Tag not found")))))
+
+;defun org-open-specific-headline (headline)
+; "Open the specific top-level HEADLINE while keeping others closed.
+;hen move the cursor to the line above the second-level headline with the tag."
+; (goto-char (point-min))
+; (org-overview)
+; (if (re-search-forward (format "^\\* %s" (regexp-quote headline)) nil t)
+;     (progn
+;       (org-show-children 3)
+;       (when (re-search-forward "^\\*\\* .*:restart-here:" nil t)
+;         (beginning-of-line)
+;         (forward-line -1)))
+;   (message "Headline not found")))
+
+
+
+(defun my-delayed-org-setup ()
+"Run my-org-mode-setup and then my-open-log-file-and-move-above-tag."
+(my-org-mode-setup)
+(run-at-time "0.1 sec" nil 'my-open-log-file-and-move-above-tag))
+
+(add-hook 'org-mode-hook 'my-delayed-org-setup)
+*** Open a file and move to a headline with a specific tag
+The default tag is restart-here.
+Example usage:
+(open-org-file-and-move-to-tag "~/path/to/your/file.org" "your-tag")
+#+BEGIN_SRC emacs-lisp
+(defun open-org-file-and-move-to-tag (file &optional tag)
+  "Open an Org file and move the cursor below a headline with a specific TAG.
+If TAG is not provided, use a hardcoded default tag.
+You have have to adjust the headline level in the funciton.
+The regular expression ^\\*\\* .*:%s: is used to search for second-level headlines (those starting with **) with the specified tag."
+  (interactive "fOrg file: \nsTag (leave empty for default): ")
+  (let ((tag (if (string= tag "") "restart-here" tag)))
+    (find-file file)
+    (goto-char (point-min))
+    (if (re-search-forward (format "^\\*\\* .*:%s:" tag) nil t)
+        (org-end-of-subtree)
+      (message "Tag not found"))))
+#+END_SRC
+*** Play a YouTube video with mpv
+You insert the YouTube url in the minibufffer.
+You have to install mpv with a package manager and another binary package.
+`sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl`
+`sudo chmod a+rx /usr/local/bin/youtube-dl`
+#+BEGIN_SRC emacs-lisp
+(defun play-youtube-video (url)
+  "Play a YouTube video with mpv."
+  (interactive "sYouTube URL: ")
+  (start-process "mpv" nil "mpv" URL))  
+#+END_SRC
+*** Protesilous Starvou functions
+**** Functions to open popup menu when Emacs server is running
+Source: https://www.youtube.com/watch?v=vbWxT8tht9A&list=PL8Bwba5vnQK14z96Gil86pLMDO2GnOhQ6
+This function is used to capture notes when Emacs is not open.
+This idea could be harness for other purposes.
+You will need to map the
+#+BEGIN_SRC emacs-lisp
+(defun prot-window-delete-popup-frame (&rest _)
+  "Kill selected selected frame if it has parameter `prot-window-popup-frame'.
+Use this function via a hook."
+  (when (frame-parameter nil 'prot-window-popup-frame)
+    (delete-frame)))
+(defmacro prot-window-define-with-popup-frame (command)
+  "Define interactive function which calls COMMAND in a new frame.
+Make the new frame have the `prot-window-popup-frame' parameter."
+  `(defun ,(intern (format "prot-window-popup-%s" command)) ()
+     ,(format "Run `%s' in a popup frame with `prot-window-popup-frame' parameter.
+Also see `prot-window-delete-popup-frame'." command)
+     (interactive)
+     (let ((frame (make-frame '((prot-window-popup-frame . t)))))
+       (select-frame frame)
+       (switch-to-buffer " prot-window-hidden-buffer-for-popup-frame")
+       (condition-case nil
+           (call-interactively ',command)
+         ((quit error user-error)
+          (delete-frame frame))))))
+(declare-function org-capture "org-capture" (&optional goto keys))
+(defvar org-capture-after-finalize-hook)
+#+END_SRC
+*** ###autoload (autoload 'prot-window-popup-org-capture "prot-window")
+#+BEGIN_SRC emacs-lisp
+(prot-window-define-with-popup-frame org-capture)
+(add-hook 'org-capture-after-finalize-hook #'prot-window-delete-popup-frame)
+#+END_SRC
+(declare-function tmr "tmr" (time &optional description acknowledgep))
+(defvar tmr-timer-created-functions)
+
+;;;###autoload (autoload 'prot-window-popup-tmr "prot-window")
+(prot-window-define-with-popup-frame tmr)
+(add-hook 'tmr-timer-created-functions #'prot-window-delete-popup-frame)
+#+BEGIN_SRC emacs-lisp
+
+#+END_SRC
+***** The emacsclient calls that need ot be bound to system-wide keys
+The emacsclient is an Emac version agnostic.
+`alias oc="emacslient -e '(prot-window-popup-org-capture)'"`
+`emacsclient -e '(prot-window-popup-tmr)'`
+#+BEGIN_SRC emacs-lisp
+
+#+END_SRC
+*** Reload the initialization file after editing it in Emacs
+#+BEGIN_SRC emacs-lisp
+(defun reload-init-e29f ()
+  "Reload the init.el file for e29org. Edit the path to suite your needs."
+  (interactive)
+  (load-file "~/e29fewpackages/init.el"))
+  
+
+#+END_SRC
+*** Spawn a new shell with the supplied title
+#+BEGIN_SRC emacs-lisp
+(defun spawn-shell (name)
+  "Invoke shell test"
+  (interactive "MName of shell buffer to create: ")
+  (pop-to-buffer (get-buffer-create (generate-new-buffer-name name)))
+  (shell (current-buffer))
+  (process-send-string nil "echo 'test1'\n")
+  (process-send-string nil "echo 'test2'\n"))
+#+END_SRC
+*** Move the cursor to the minibuffer without using the mouse
+From video https://www.youtube.com/watch?v=X8c_TrGfYcM&t=15s using Emacs as a multiplexer."
+Derived from http://stackoverflow.com/a/4116113/446256.
+#+BEGIN_SRC emacs-lisp
+(defun switch-to-minibuffer ()
+  "Switch to minibuffer window."
+  (interactive)
+  (if (active-minibuffer-window)
+      (select-window (active-minibuffer-window))
+    (error "Minibuffer is not active")))
+(global-set-key "\C-cm" 'switch-to-minibuffer) ;; Bind to `C-c m' for minibuffer.
+(message "End of user-defined functions.")
+#+END_SRC
+
+# ***************************** Package configuration section ***********************************************
+
+** Package configuration section
+#+BEGIN_SRC emacs-lisp
+(message "Start package configurations in alphabetical order by package name.")
+(message "Start A package configurations")
+#+END_SRC
+*** A
+**** AUCTeX
+This is the more advanced LaTeX.
+Emacs has native LaTeX support that AUCTeX is an alternative to.
+#+BEGIN_SRC emacs-lisp
+(use-package auctex
+  :straight t
+  :defer t)
+(message "Start C package configurations")
+#+END_SRC
+*** C
+**** Citar
+Citar is a bibliographic management system that is an alternative to org-ref.
+Citar can operate in tex and org file whereas org-ref is limited to org-mode files.
+#+BEGIN_SRC emacs-lisp
+(use-package citar
+  :straight t
+  :bind (("C-c b" . citar-insert-citation)
+         :map minibuffer-local-map
+         ("M-b" . citar-insert-preset))
+  :custom
+    (citar-bibliography '("/Users/blaine/Documents/global.bib"))
+    (citar-library-paths '("/Users/blaine/0papersLabeled") '("/Users/blaine/0booksUnlabeled"))
+    (citar-library-file-extensions '("pdf" "epub"))
+  :hook
+#+END_SRC
+**** enable autocompletion in buffer of citekeys
+#+BEGIN_SRC emacs-lisp
+    (LaTeX-mode . citar-capf-setup)
+    (org-mode . citar-capf-setup))
+#+END_SRC
+**** company-box
+***** formats the options delivered by the company autocompletion system
+#+BEGIN_SRC emacs-lisp
+(use-package company-box
+    :straight t
+    :config
+    (setq company-box-max-candidates 50
+          company-frontends '(company-tng-frontend company-box-frontend)
+          company-box-icons-alist 'company-box-icons-all-the-icons))
+(with-eval-after-load 'company
+  (define-key company-active-map
+              (kbd "TAB")
+              #'company-complete-common-or-cycle)
+  (define-key company-active-map
+              (kbd "<backtab>")
+              (lambda ()
+                (interactive)
+                (company-complete-common-or-cycle -1))))
+(with-eval-after-load 'company
+  (define-key company-active-map (kbd "M-.") #'company-show-location)
+  (define-key company-active-map (kbd "RET") nil))
+#+END_SRC
+**** Company Configuration
+Source: https://github.com/Exafunction/codeium.el
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :straight t    
+  :defer 0.1
+  :hook ((emacs-lisp-mode . (lambda ()
+                              (setq-local company-backends '(company-elisp))))
+         (emacs-lisp-mode . company-mode))
+  :config
+  (global-company-mode t)
+  (company-tng-configure-default) ; restore old tab behavior
+  (setq-default
+   company-idle-delay 0.05
+   company-require-match nil
+   company-minimum-prefix-length 1
+#+END_SRC
+***** get only preview
+***** company-frontends '(company-preview-frontend)
+***** also get a drop down
+#+BEGIN_SRC emacs-lisp
+   company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend)
+   ))
+(message "Finished C package configurations")
+(message "Started L packages configurations")
+#+END_SRC
+*** L
+**** lsp-mode
+This mode is required to be able to use other lsp modes.
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-mode
+  :straight t
+  :commands (lsp lsp-deferred)
+  :bind (:map lsp-mode-map
+              ("C-c d" . lsp-describe-thing-at-point)
+              ("C-c a" . lsp-execute-code-action))
+  :bind-keymap ("C-c l" . lsp-command-map)
+  :hook ((latex-mode . lsp-deferred)
+  (lsp-mode . lsp-enable-which-key-integration))
+  :config
+  (lsp-enable-which-key-integration t)
+  (setq lsp-headerline-breadcrumb-enable nil))
+#+END_SRC
+**** lsp-latex
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-latex
+  :straight t
+  :after lsp-mode
+  :hook (latex-mode . lsp-latex-enable))
+#+END_SRC
+**** lsp-ltex (the languagetool lsp server)
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-ltex
+  :straight t
+  :after lsp-mode
+  :hook ((text-mode . lsp)
+         (latex-mode . lsp)
+         (org-mode . lsp))
+  :config
+  (setq lsp-ltex-language "en-US")
+  :init
+  (setq lsp-ltex-version "16.0.0"))
+#+END_SRC
+**** lsp-ui
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-ui
+    :straight t
+    :commands lsp-ui-mode)
+#+END_SRC
+**** lsp-treemacs
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-treemacs 
+       :straight t
+       :commands lsp-treemacs-errors-list)       
+(message "Finished L package configurations")
+(message "Start M package configurations")
+#+END_SRC
+*** M
+**** Marginalia Configuration
+This package produces a transient list of optional commands.
+#+BEGIN_SRC emacs-lisp
+(use-package marginalia
+  :straight (marginalia :type git :host github :repo "minad/marginalia")
+  :config
+  (marginalia-mode))
+(customize-set-variable 'marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
+(marginalia-mode 1)
+#+END_SRC
+**** Math-preview that is mode agnostic
+Uses MathJaX.
+You have to download and install the bindary
+#+BEGIN_SRC emacs-lisp
+(use-package math-preview
+  :straight t
+  :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))s
+(message "Finished M packages configurations")
+
+(message "Start O package configurations")
+#+END_SRC
+*** O
+**** Org-agenda
+This can be complex to configure.
+#+BEGIN_SRC emacs-lisp
+(setq org-agenda-start-with-log-mode t)
+(setq org-log-done 'time)
+(setq org-log-into-drawer t)
+#+END_SRC
+***** Follow links
+#+BEGIN_SRC emacs-lisp
+(setq org-return-follows-link t)
+#+END_SRC
+***** Treat *.org files as org-mode files
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
+#+END_SRC
+***** Hide the emphasis markers so you just see bold text as BOLD-TEXT and not *BOLD-TEXT*
+#+BEGIN_SRC emacs-lisp
+(setq org-hide-emphasis-markers t)
+#+END_SRC
+***** Stoup's fonts for org
+These settings have been added to the customization section.
+They can only be called once in an init.el file.
+#+BEGIN-COMMENT
+(let* ((variable-tuple
+(cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
+((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+((x-list-fonts "Verdana")         '(:font "Verdana"))
+((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+(nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+(base-font-color     (face-foreground 'default nil 'default))
+(headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+
+(custom-theme-set-faces
+'user
+`(org-level-8 ((t (,@headline ,@variable-tuple))))
+`(org-level-7 ((t (,@headline ,@variable-tuple))))
+`(org-level-6 ((t (,@headline ,@variable-tuple))))
+`(org-level-5 ((t (,@headline ,@variable-tuple))))
+`(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+`(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
+`(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
+`(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
+`(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
+#+END_COMMENT
+
+***** Org-agenda key-bindings
+#+BEGIN_SRC emacs-lisp
+(define-key global-map "\C-ca" 'org-agenda)
+(setq org-log-done t)
+(define-key global-map "\C-cc" 'org-capture)
+(define-key global-map "\C-cl" 'org-store-link)
+(global-set-key (kbd "C-c v") 'org-refile)
+#+END_SRC
+Note that I have more capture commands below.
+#+BEGIN_SRC emacs-lisp
+(setq org-columns-default-format "%50ITEM(Task) %10CLOCKSUM %16TIMESTAMP_IA")
+#+END_SRC
+***** Source of TODO keywords read into org-agenda
+#+BEGIN_SRC emacs-lisp
+(setq org-agenda-files '("/Users/blaine/.notes"
+                         "/Users/blaine/gtd/tasks/JournalArticles.org"
+                         "/Users/blaine/0573CrystalDetectionMeasurement/log0573.org"
+                         "/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org"
+                         "/Users/blaine/gtd/tasks/Proposals.org"
+                         "/Users/blaine/1019NIHemofat/cb/log1019.org"
+                         "/Users/blaine/gtd/tasks/Books.org"
+                         "/Users/blaine/gtd/tasks/Talks.org"
+                         "/Users/blaine/gtd/tasks/Posters.org"
+                         "/Users/blaine/gtd/tasks/ManuscriptReviews.org"
+                         "/Users/blaine/gtd/tasks/Private.org"
+                         "/Users/blaine/gtd/tasks/Service.org"
+                         "/Users/blaine/gtd/tasks/Teaching.org"
+                         "/Users/blaine/gtd/tasks/Workshops.org"
+                         "/Users/blaine/gtd/tasks/springsem24.org"
+                         "/Users/blaine/gtd/tasks/summersem24.org"
+                         "/Users/blaine/gtd/tasks/fallsem24.org"))
+#+END_SRC
+***** Order of TODO keywords
+Cycle through these keywords with shift right or left arrows.
+#+BEGIN_SRC emacs-lisp
+(setq org-todo-keywords
+        '((sequence "TODO(t)" "PLANNING(p)" "IN-PROGRESS(i@/!)"  "WAITING(w!)" "CAL(a)"  "PROJ(j)" "|" "DONE(d!)" "SOMEDAY(s!)" "CANCELLED(c!)"  )))
+#+END_SRC
+***** TODO keyword colors
+#+BEGIN_SRC emacs-lisp
+(setq org-todo-keyword-faces
+      '(
+        ("TODO" . (:foreground "Red" :weight bold))
+        ("PLANNING" . (:foreground "DeepPink" :weight bold))
+        ("IN-PROGRESS" . (:foreground "Cyan" :weight bold))
+        ("WAITING" . (:foreground "DarkOrange" :weight bold))
+        ("CAL" . (:foreground "GoldenOrange" :weight bold))
+        ("PROJ" . (:foreground "LimeGreen" :weight bold))
+        ("DONE" . (:foreground "LimeGreen" :weight bold))
+        ("SOMEDAY" . (:foreground "LimeGreen" :weight bold))
+        ("CANCELLED" . (:foreground "LightGray" :weight bold))
+        ))
+#+END_SRC
+***** Press C-c r to select the log file from the list of log files for insert todos with C-c t
+The function will then search for the heading with the specified tag and append the TODO item at the bottom of the TODO list under that heading.
+#+BEGIN_SRC emacs-lisp
+(setq my-org-refile-directories '(
+("/Users/blaine/gtd/tasks/JournalArticles.org" :maxlevel . 3)
+("/Users/blaine/gtd/tasks/Proposals.org" :maxlevel . 3)
+("/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org" :maxlevel . 3)
+))
+#+END_SRC
+****** Writing project log files as refile targets
+The TODOs are at the 3rd headline level.
+#+BEGIN_SRC emacs-lisp
+(setq my-org-refile-targets '(
+    ("/Users/blaine/0573CrystalDetectionMeasurement/log0573.org" :maxlevel . 3)
+    ("/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org" :maxlevel . 3)
+    ("/Users/blaine/1019NIHemofat/cb/log1019.org" :maxlevel . 3)
+   ))
+
+(defun my-select-org-refile-target ()
+     "Prompt for an org refile target from a list of directories."
+     (interactive)
+     (let ((target (completing-read "Select refile target: " my-org-refile-targets)))
+       (setq my-org-refile-targets `((,target :maxlevel . 3)))))
+
+(setq org-refile-use-outline-path 'file)
+(global-set-key (kbd "C-c r") 'my-select-org-refile-target)
+#+END_SRC
+****** Append TODO item at bottom of TODO list in writing project log file.
+I like to use project ID number and 'do' at the tag.
+#+BEGIN_SRC emacs-lisp
+(defun my-append-todo-to-heading (tag todo-text)
+     "Append TODO-TEXT to the bottom of a TODO list under a heading with TAG. Enter the tag without the flanking colons."
+         (interactive "sTag: \nsTODO: ")
+         (save-excursion
+           (goto-char (point-min))
+           (if (re-search-forward (format "^\*+ .* :%s:" tag) nil t)
+               (progn
+                 (org-end-of-subtree t t)
+                 (insert (format "*** TODO %s \n" todo-text)))
+             (message "Heading with tag %s not found" tag))))
+(global-set-key (kbd "C-c t") 'my-append-todo-to-heading)
+(message "Finished refile target configuration.")
+#+END_SRC
+***** Customized agenda views
+These are my customized agenda views by project.
+The letter is the last parameter.
+For example, enter ~C-c a b~ and then enter 402 at the prompt to list all active tasks related to 402 tasks.
+
+I learned about this approach [[https://tlestang.github.io/blog/keeping-track-of-tasks-and-projects-using-emacs-and-org-mode.html][here]].
+
+The CATEGORY keyword resides inside of a Properties drawer.
+The drawers are usually closed.
+I am having trouble opening my drawers in may org files.
+In addition, I do not want to have to add a drawer to each TODO.
+
+I am loving Tags now.
+I may switch to using Tags because they are visible in org files.
+I tried and they are not leading to the expect list of TODOs in org-agenda.
+I am stumped.
+
+In the meantime, enter ~C-c \~ inside JournalArticles.org to narrow the focus to the list of TODOs or enter ~C-c i b~ to get an indirect buffer.
+#+BEGIN_SRC emacs-lisp
+(setq org-agenda-custom-commands
+      '(
+    ("b"
+             "List of all active 1019 tasks."
+             tags-todo
+             "1019\"/TODO|INITIATED|WAITING")
+    ("c"
+             "List of all active 523 RNA-drug crystallization review paper tasks."
+             tags-todo
+             "CATEGORY=\"523\"/TODO|INITIATED|WAITING")
+    ("d"
+             "List of all active 0527CrystalDetectionByAI tasks."
+             tags-todo
+             "CATEGORY=\"527\"/TODO|INITIATED|WAITING")
+    ("e"
+            "List of all active 0032RNA32merEditingSite tasks."
+            tags-todo
+            "CATEGORY=\"32\"/TODO|INITIATED|WAITING")
+
+    ("l"
+             "List of all active 0598tenRulesWritingProjectLog tasks."
+             tags-todo
+            "CATEGORY=\"598\"/TODO|INITIATED|WAITING")
+    ("e"
+            "List of all active 0495emofat4mx tasks."
+            tags-todo
+            "CATEGORY=\"495\"/TODO|INITIATED|WAITING")
+    ("r"
+            "List of all active 0466ReproDSD tasks."
+            tags-todo
+            "CATEGORY=\"515\"/TODO|INITIATED|WAITING")
+    ("s"
+            "List of all active 0515CrystallizationSupports tasks."
+            tags-todo
+            "CATEGORY=\"515\"/TODO|INITIATED|WAITING")
+    ("P"
+         "List of all projects"
+         tags
+         "LEVEL=2/PROJ")))
+(message "Finished org-agenda custum command configuration.")
+(message "Fnished O package configurations")
+
+(message "Start P package configurations")
+#+END_SRC
+*** P
+**** pdf-tools
+Emacs has a built-in DocView package that can display PDFs but it is not as versatile as pdf-tools.
+You will likely by prompted to run pdf-tools-install to compile it.
+It is needed to be able to annotate PDF from inside Emacs.
+I have not gotten that far.
+#+BEGIN_SRC emacs-lisp
+(use-package pdf-tools
+ :straight t    
+ :pin manual ;; manually update
+ :config
+#+END_SRC
+*** initialise
+#+BEGIN_SRC emacs-lisp
+ (pdf-tools-install)
+#+END_SRC
+*** open pdfs scaled to fit width
+#+BEGIN_SRC emacs-lisp
+ (setq-default pdf-view-display-size 'fit-width)
+#+END_SRC
+*** use normal isearch
+#+BEGIN_SRC emacs-lisp
+ (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+ :custom
+ (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
+(message "Finished P package configurations.")
+ 
+(message "Start S package configurations.")
+#+END_SRC
+*** S
+**** show-key
+Conflicts with tmux-pane
+#+BEGIN_COMMENT
+(straight-use-package
+'(showkey :type git :local-repo "~/e29fewpackages/manual-install/showkey"))
+(set-face-attribute 'default nil :height 240)
+(require 'showkey)
+#+END_COMMENT
+**** The emacsclient call depends on the daemon or `server-mode'
+The emacsclient depends either running the server or a daemon.
+The server is easier to manage than the daemon because you will
+find to find the daemon and kill it after updating the init.el file.
+This package is built-in, so it does not need to be installed by straight.
+#+BEGIN_SRC emacs-lisp
+(use-package server  
+  :ensure nil
+  :defer 1
+  :config
+  (unless (server-running-p)
+    (server-start)))
+(message "Finished S package configurations.")
+
+
+(message "Start T package configurations.")
+#+END_SRC
+*** T
+**** tmux-pane
+#+BEGIN_SRC emacs-lisp
+(use-package tmux-pane
+   :straight (tmux-pane :type git :host github :repo "laishulu/emacs-tmux-pane"))
+#+END_SRC
+**** treemacs
+Provides sidebar access to contents of the treemacs project directory
+#+BEGIN_SRC emacs-lisp
+(use-package treemacs
+   :straight t
+   :defer t
+   :init
+   (with-eval-after-load 'winum
+     (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+   :config
+   (progn
+     (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
+           treemacs-deferred-git-apply-delay        0.5
+           treemacs-directory-name-transformer      #'identity
+           treemacs-display-in-side-window          t
+           treemacs-eldoc-display                   'simple
+           treemacs-file-event-delay                2000
+           treemacs-file-extension-regex            treemacs-last-period-regex-value
+           treemacs-file-follow-delay               0.2
+           treemacs-file-name-transformer           #'identity
+           treemacs-follow-after-init               t
+           treemacs-expand-after-init               t
+           treemacs-find-workspace-method           'find-for-file-or-pick-first
+           treemacs-git-command-pipe                ""
+           treemacs-goto-tag-strategy               'refetch-index
+           treemacs-header-scroll-indicators        '(nil . "^^^^^^")
+           treemacs-hide-dot-git-directory          t
+           treemacs-indentation                     2
+           treemacs-indentation-string              " "
+           treemacs-is-never-other-window           nil
+           treemacs-max-git-entries                 5000
+           treemacs-missing-project-action          'ask
+           treemacs-move-files-by-mouse-dragging    t
+           treemacs-move-forward-on-expand          nil
+           treemacs-no-png-images                   nil
+           treemacs-no-delete-other-windows         t
+           treemacs-project-follow-cleanup          nil
+           treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+           treemacs-position                        'left
+           treemacs-read-string-input               'from-child-frame
+           treemacs-recenter-distance               0.1
+           treemacs-recenter-after-file-follow      nil
+           treemacs-recenter-after-tag-follow       nil
+           treemacs-recenter-after-project-jump     'always
+           treemacs-recenter-after-project-expand   'on-distance
+           treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
+           treemacs-project-follow-into-home        nil
+           treemacs-show-cursor                     nil
+           treemacs-show-hidden-files               t
+           treemacs-silent-filewatch                nil
+           treemacs-silent-refresh                  nil
+           treemacs-sorting                         'alphabetic-asc
+           treemacs-select-when-already-in-treemacs 'move-back
+           treemacs-space-between-root-nodes        t
+           treemacs-tag-follow-cleanup              t
+           treemacs-tag-follow-delay                1.5
+           treemacs-text-scale                      nil
+           treemacs-user-mode-line-format           nil
+           treemacs-user-header-line-format         nil
+           treemacs-wide-toggle-width               70
+           treemacs-width                           35
+           treemacs-width-increment                 1
+           treemacs-width-is-initially-locked       t
+           treemacs-workspace-switch-cleanup        nil)
+             (treemacs-resize-icons 44)
+             (treemacs-follow-mode t)
+             (treemacs-filewatch-mode t)
+             (treemacs-fringe-indicator-mode 'always)
+             (when treemacs-python-executable
+               (treemacs-git-commit-diff-mode t))
+             (pcase (cons (not (null (executable-find "git")))
+                          (not (null treemacs-python-executable)))
+               (`(t . t)
+                (treemacs-git-mode 'deferred))
+               (`(t . _)
+                (treemacs-git-mode 'simple)))
+             (treemacs-hide-gitignored-files-mode nil))
+           :bind
+           (:map global-map
+                 ("M-0"       . treemacs-select-window)
+                 ("C-x t 1"   . treemacs-delete-other-windows)
+                 ("C-x t t"   . treemacs)
+                 ("C-x t d"   . treemacs-select-directory)
+                 ("C-x t B"   . treemacs-bookmark)
+                 ("C-x t C-t" . treemacs-find-file)
+                 ("C-x t M-t" . treemacs-find-tag)))
+#+END_SRC
+The default width and height of the icons is 22 pixels. If you are
+using a Hi-DPI display, uncomment this to double the icon size.
+
+**** treemacs-protjectile
+#+BEGIN_SRC emacs-lisp
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :straight t)
+#+END_SRC
+**** treemacs-icons-dired
+#+BEGIN_SRC emacs-lisp
+(use-package treemacs-icons-dired
+  :hook (dired-mode . treemacs-icons-dired-enable-once)
+  :straight t)
+#+END_SRC
+**** treemacs-perspective
+treemacs-perspective if you use perspective.el vs. persp-mode
+#+BEGIN_SRC emacs-lisp
+(use-package treemacs-persp 
+  :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+  :straight t
+  :config (treemacs-set-scope-type 'Perspectives))
+#+END_SRC
+**** treemacs start on boot
+#+BEGIN_SRC emacs-lisp
+(treemacs-start-on-boot)
+(message "Finished T package configurations.")
+
+(message "Start U package configurations.")
+#+END_SRC
+*** U
+**** undo-tree
+The displayed undo tree is very helpful.
+#+BEGIN_SRC emacs-lisp
+(use-package undo-tree
+  :straight t
+  :config
+  (global-undo-tree-mode 1)) 
+(message "Finished U package configurations.")   
+
+(message "Start V package configurations.")
+#+END_SRC
+*** V
+**** vterm
+One of five terminal type available in Emacs.
+See https://github.com/akermu/emacs-libvterm for configuration of init.el and .zshrc
+#+BEGIN_SRC emacs-lisp
+(use-package vterm
+  :straight t)
+(define-key vterm-mode-map (kbd "C-q") #'vterm-send-next-key)
+#+END_SRC
+**** vertico
+#+BEGIN_SRC emacs-lisp
+(use-package vertico
+  :straight t
+  :init
+  (vertico-mode)
+#+END_SRC
+**** Different scroll margin
+**** (setq vertico-scroll-margin 0)
+**** Show more candidates
+#+BEGIN_SRC emacs-lisp
+  (setq vertico-count 20)
+#+END_SRC
+**** Grow and shrink the Vertico minibuffer
+#+BEGIN_SRC emacs-lisp
+  (setq vertico-resize t)
+#+END_SRC
+**** Optionally enable cycling for `vertico-next' and `vertico-previous'.
+#+BEGIN_SRC emacs-lisp
+  (setq vertico-cycle t))
+(message "Finished V package configurations.") 
+
+(message "Start package configurations W")
+(message "Finished W package configurations.") 
+#+END_SRC
+*** Y
+#+BEGIN_SRC emacs-lisp
+(message "Start package configurations Y")
+#+END_SRC
+**** yasnippet
+The popular snippet creator and manager package,
+#+BEGIN_SRC emacs-lisp
+(use-package yasnippet
+  :straight t    
+  :config
+  (yas-global-mode 1))
+(global-set-key "\C-o" 'yas-expand)
+(global-set-key "\C-c y i" 'yas-insert-snippet)
+(global-set-key "\C-c y n" 'yas-new-snippet)
+#+END_SRC
+**** A cool hydra for finding snippets at point. Invoke with C-c y.
+#+BEGIN_SRC emacs-lisp
+(use-package hydra
+  :straight t     
+  :defer 2
+  :bind ("C-c y" . hydra-yasnippet/body))
+#+END_SRC
+**** A popup menu for snippet selection
+#+BEGIN_SRC emacs-lisp
+(use-package popup
+  :straight t)
+#+END_SRC
+Add some shortcuts in popup menu mode.
+#+BEGIN_SRC emacs-lisp
+(define-key popup-menu-keymap (kbd "M-n") 'popup-next)
+(define-key popup-menu-keymap (kbd "TAB") 'popup-next)
+(define-key popup-menu-keymap (kbd "M-p") 'popup-previous)
+(defun yas/popup-isearch-prompt (prompt choices &optional display-fn)
+  (when (featurep 'popup)
+    (popup-menu*
+     (mapcar
+      (lambda (choice)
+        (popup-make-item
+         (or (and display-fn (funcall display-fn choice))
+             choice)
+         :value choice))
+      choices)
+     :prompt prompt
+#+END_SRC
+******* start isearch mode immediately
+#+BEGIN_SRC emacs-lisp
+     :isearch t)))
+(setq yas/prompt-functions '(yas/popup-isearch-prompt yas/no-prompt))
+(message "Finished Y package configurations.") 
+
+#+END_SRC
+* Customizations
+Leave these alone.
+#+BEGIN_SRC emacs-lisp
+(message "Start custom set-variables")
+(custom-set-variables
+ '(pdf-view-incompatible-modes
+   '(linum-mode linum-relative-mode helm-linum-relative-mode nlinum-mode nlinum-hl-mode nlinum-relative-mode yalinum-mode))
+ '(showkey-log-mode t)
+ '(weatherline-mode t))
+(custom-set-faces
+ '(org-document-title ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.6 :underline nil))))
+ '(org-level-1 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.5))))
+ '(org-level-2 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.3))))
+ '(org-level-3 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.2))))
+ '(org-level-4 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.1))))
+ '(org-level-5 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-6 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-7 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-8 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande")))))
+ #+END_SRC
