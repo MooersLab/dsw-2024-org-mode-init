@@ -33,8 +33,9 @@
 ;%  The order of the remaining content of the intial.org does not matter but I like to divide it into settings, user-defined functions, and packages.
 (message "Start global configuration.") 
 ;;; Enable mouse in terminal Emacs (emacs -nw)
-(when (eq window-system nil)
-      (xterm-mouse-mode t))
+(unless (display-graphic-p)
+  (xterm-mouse-mode 1)
+  (setq xterm-extra-capabilities '(modifyOtherKeys)))
 ;;; Minibuffer history keybindings
 ;%  The calling up of a previously issued command in the minibuffer with ~M-p~ saves times.
 (autoload 'edit-server-maybe-dehtmlize-buffer "edit-server-htmlize" "edit-server-htmlize" t)
@@ -47,7 +48,6 @@
 (define-key minibuffer-local-map (kbd "<down>") 'next-complete-history-element)
 ;;; Bibtex configuration
 (defconst blaine/bib-libraries (list "/Users/blaine/Documents/global.bib"))
-
 ;;; For retina displays on Macs 
 ;%  TCombined with emacs-mac, this gives good PDF quality for [[https://www.aidanscannell.com/post/setting-up-an-emacs-playground-on-mac/][retina display]].
 (setq pdf-view-use-scaling t)
@@ -100,7 +100,46 @@
 ;%  ***************************** User-defined functions section ***********************************************  
 ;; Start user-defined functions section
 (message "User defined functions in alphabetical order.") 
-
+  
+;;; convert-init-el-to-org    
+(defun convert-init-el-to-org (input-file output-file)
+      "Convert an Emacs init.el file to an Org-mode file."
+      (with-temp-buffer
+        (insert-file-contents input-file)
+        (let ((in-src-block nil))
+          (with-temp-file output-file
+            (insert "#+TITLE: Emacs Configuration\n")
+            (insert "#+AUTHOR: Blaine Mooers\n")
+            (insert "#+OPTIONS: toc:nil\n\n")
+            (goto-char (point-min))
+            (while (not (eobp))
+              (let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+                (cond
+                 ;; Match comments and convert them to org-mode headings or prose
+                 ((string-match-p "^\\s-*;%+" line)
+                  (let ((prose (string-trim (replace-regexp-in-string "^\\s-*;%+" "" line))))
+                    (when in-src-block
+                      (insert "#+END_SRC\n\n")
+                      (setq in-src-block nil))
+                    (insert (format "%s\n\n" prose))))
+                 ((string-match-p "^\\s-*;" line)
+                  (let* ((level (length (match-string 0 line)))
+                         (heading (string-trim (replace-regexp-in-string "^\\s-*;+" "" line))))
+                    (when in-src-block
+                      (insert "#+END_SRC\n\n")
+                      (setq in-src-block nil))
+                    (insert (format "%s %s\n" (make-string level ?*) heading))))
+                 (t
+                  (unless in-src-block
+                    (insert "#+BEGIN_SRC emacs-lisp\n")
+                    (setq in-src-block t))
+                  (insert (format "%s\n" line))))
+                (forward-line 1)))
+            (when in-src-block
+              (insert "#+END_SRC\n"))))))
+;% Example usage:
+;% (convert-init-el-to-org "~/path/to/init.el" "~/path/to/init.org")    
+    
 ;;; create-org-table-with-caption
 ;%  This interactive function prompts the user for the number of rows, columns, and caption of the table.
 (defun create-org-table-with-caption ()
@@ -116,7 +155,6 @@
     (dotimes (_ cols)
       (insert "----+"))
     (insert "\n|")
-    ;;(insert "|")
     (dotimes (col cols)
       (insert (format " %c |" (+ ?A col))))
     (insert "\n|")
@@ -138,7 +176,7 @@
   (interactive "fFile: \nNLine: \n")
   (find-file file)
   (goto-line line))
-
+  
 ;;; ffap: find file at point
 ;%  https://unix.stackexchange.com/questions/691444/how-do-i-open-a-file-at-specific-line-in-a-running-emacs
 ;%  have ffap pick up line number and goto-line
@@ -260,6 +298,29 @@ The regular expression ^\\*\\* .*:%s: is used to search for second-level headlin
 ;%  You have to install mpv with a package manager and another binary package.
 ;%  sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
 ;%  sudo chmod a+rx /usr/local/bin/youtube-dl
+
+;;; open-template-with-citekey
+;% Open template file renmaed with the citekey under the point.
+;% This file is for use with an annotated bibliography.
+;% Developed with the help of CoPilot.
+(defun open-new-bibnote-on-citekey ()
+  "Open a template file in Org-mode, rename it to the citekey under the cursor, 
+  and save it to '~/bibNote/'. Citar has a function that will insert the citekey."
+  (interactive)
+  (let* ((citekey (thing-at-point 'word t))
+         (template-file "~/bibNotes/templates/abib-template.org")
+         (output-dir "~/bibNotes/")
+         (output-file (concat output-dir citekey ".org")))
+    (unless (file-exists-p output-dir)
+      (make-directory output-dir t))
+    (if (and citekey (file-exists-p template-file))
+        (progn
+          (copy-file template-file output-file t)
+          (find-file output-file)
+          (message "Template file saved as %s" output-file))
+      (message "Citekey or template file not found"))))
+(global-set-key (kbd "C-c n") 'open-new-bibnote-on-citekey)
+;;;; play-youtube-video 
 (defun play-youtube-video (url)
   "Play a YouTube video with mpv."
   (interactive "sYouTube URL: ")
@@ -291,18 +352,16 @@ Also see `prot-window-delete-popup-frame'." command)
           (delete-frame frame))))))
 (declare-function org-capture "org-capture" (&optional goto keys))
 (defvar org-capture-after-finalize-hook)
-
-;;;###autoload (autoload 'prot-window-popup-org-capture "prot-window")
 (prot-window-define-with-popup-frame org-capture)
 (add-hook 'org-capture-after-finalize-hook #'prot-window-delete-popup-frame)
 
+;%#+BEGIN_COMMENT 
 ;%  (declare-function tmr "tmr" (time &optional description acknowledgep))
 ;%  (defvar tmr-timer-created-functions)
-;% 
-;%  ;;;###autoload (autoload 'prot-window-popup-tmr "prot-window")
 ;%  (prot-window-define-with-popup-frame tmr)
 ;% 
 ;%  (add-hook 'tmr-timer-created-functions #'prot-window-delete-popup-frame)
+;%#+END_COMMENT
 
 ;;;;; The emacsclient calls that need ot be bound to system-wide keys
 ;%  The emacsclient is an Emac version agnostic.
@@ -368,6 +427,97 @@ Also see `prot-window-delete-popup-frame'." command)
   ;; enable autocompletion in buffer of citekeys
     (LaTeX-mode . citar-capf-setup)
     (org-mode . citar-capf-setup))
+;;;; citar-org-roam
+;% Use to generate literature notes for bib entries accessed with citar.
+(use-package citar-org-roam
+  :straight t
+  :after (citar org-roam)
+  :config (citar-org-roam-mode))
+(setq citar-org-roam-note-title-template "${author} - ${title}")
+(setq org-roam-capture-templates
+      '(("d" "default" plain
+         "%?"
+         :target
+         (file+head
+          "%<%Y%m%d%H%M%S>-${slug}.org"
+          "#+title: ${note-title}\n")
+         :unnarrowed t)
+        ("n" "literature note" plain
+         "%?"
+         :target
+         (file+head
+          "%(expand-file-name (or citar-org-roam-subdir \"\") org-roam-directory)/${citar-citekey}.org"
+          "#+title: ${citar-citekey} (${citar-date}). ${note-title}.\n#+created: %U\n#+last_modified: %U\n\n")
+         :unnarrowed t)))
+(setq citar-org-roam-capture-template-key "n")
+
+(citar-register-notes-source
+ 'orb-citar-source (list :name "Org-Roam Notes"
+        :category 'org-roam-node
+        :items #'citar-org-roam--get-candidates
+        :hasitems #'citar-org-roam-has-notes
+        :open #'citar-org-roam-open-note
+        :create #'orb-citar-edit-note
+        :annotate #'citar-org-roam--annotate))
+
+(setq citar-notes-source 'orb-citar-source)
+
+
+(defvar bibliographic-entry-template
+  "#+title: %s
+#+subtitle: Bibliographic Notes
+#+author: %s
+#+email: %s
+#+property: header-args+ :comments link
+#+cite_export: csl apa.csl
+
+* Notes
+
+|
+
+* References
+
+#+begin_src bibtex :tangle %s :exports none
+%s
+#+end_src
+
+#+print_bibliography:")
+
+(defun my-citar-org-open-notes (key entry)
+  (let* ((bib (concat my/bibtex-directory key ".bib"))
+         (org (concat my/bibtex-directory key ".org"))
+         (new (not (file-exists-p org))))
+    (funcall citar-file-open-function org)
+    (when (and new (eq (buffer-size) 0))
+      (insert (format bibliographic-entry-template
+                      (assoc-default "title" entry)
+                      user-full-name
+                      user-mail-address
+                      bib
+                      (with-temp-buffer
+                        (insert-file-contents bib)
+                        (buffer-string))))
+      (search-backward "|")
+      (delete-char 1))))
+
+
+; Define the Template:
+;
+; The bibliographic-entry-template variable holds the template string for the bibliographic entry.
+; Function to Open Notes:
+;
+; The my-citar-org-open-notes function constructs the paths for the .bib and .org files, opens the .org file, and inserts the formatted template if the file is new.
+; Set the Default Note Function:
+;
+; The setq-default line sets my-citar-org-open-notes as the default function for opening notes with citar.
+; Usage:
+; Add the above code to your init.el file.
+; Ensure that my/bibtex-directory is defined and points to the directory where your BibTeX files are stored.
+; When you open a note with citar, it will use the specified template and function
+
+
+
+(setq-default citar-open-note-function 'my-citar-org-open-notes)
 ;;;; company-box
 ;;;;; formats the options delivered by the company autocompletion system
 (use-package company-box
@@ -466,7 +616,7 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%  You have to download and install the bindary
 (use-package math-preview
   :straight t
-  :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))s
+  :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
 (message "Finished M packages configurations")
 
 
@@ -660,8 +810,352 @@ Also see `prot-window-delete-popup-frame'." command)
          "List of all projects"
          tags
          "LEVEL=2/PROJ")))
+
+;;;; Remap the change priority keys to use the UP or DOWN key
+;; (define-key org-mode-map (kbd "C-c <up>") 'org-priority-up)
+;; (define-key org-mode-map (kbd "C-c <down>") 'org-priority-down)
 (message "Finished org-agenda custum command configuration.")
-(message "Fnished O package configurations")
+
+
+(message "Started org-cc.")
+;;;; org-cc 
+;% Context clues
+;% source  https://github.com/durableOne/org-cc
+(use-package org-cc
+  :straight (org-cc :type git :host github :repo "durableOne/org-cc")        
+  :ensure nil
+  :after org
+  :custom
+  (org-cc-directory (concat org-directory "org-cc")) ;; subdirectory of the heading's attachment directory
+  (org-cc-days 14)
+  :init
+  (add-hook 'org-clock-in-hook #'org-cc-display-notes)
+)
+(global-set-key (kbd "C-c k") 'org-cc-edit-cc-file)
+(global-set-key (kbd "C-c x") 'org-cc-display-notes)
+(message "Finished org-cc.")
+
+
+;% (message "Started org-noter configuration.")
+;% (use-package org-noter
+;%   :straight (org-noter :type git :host github :repo "weirdNox/org-noter")
+;%   :config
+;%   ;; Your org-noter config ........
+;%   (require 'org-noter-pdftools))
+;%
+;% (use-package org-pdftools
+;%   :straight (org-pdftools :type git :host github :repo "fuxialexander/org-pdftools")
+;%   :hook (org-mode . org-pdftools-setup-link))
+;%
+;% (use-package org-noter-pdftools
+;%   :straight (org-noter-pdftools :type git :host github :repo "fuxialexander/org-pdftools")
+;%   :after org-noter
+;%   :config
+;%   ;; Add a function to ensure precise note is inserted
+;%   (defun org-noter-pdftools-insert-precise-note (&optional toggle-no-questions)
+;%     (interactive "P")
+;%     (org-noter--with-valid-session
+;%      (let ((org-noter-insert-note-no-questions (if toggle-no-questions
+;%                                                    (not org-noter-insert-note-no-questions)
+;%                                                  org-noter-insert-note-no-questions))
+;%            (org-pdftools-use-isearch-link t)
+;%            (org-pdftools-use-freepointer-annot t))
+;%        (org-noter-insert-note (org-noter--get-precise-info)))))
+;%
+;%   ;; fix https://github.com/weirdNox/org-noter/pull/93/commits/f8349ae7575e599f375de1be6be2d0d5de4e6cbf
+;%   (defun org-noter-set-start-location (&optional arg)
+;%     "When opening a session with this document, go to the current location.
+;% With a prefix ARG, remove start location."
+;%     (interactive "P")
+;%     (org-noter--with-valid-session
+;%      (let ((inhibit-read-only t)
+;%            (ast (org-noter--parse-root))
+;%            (location (org-noter--doc-approx-location (when (called-interactively-p 'any) 'interactive))))
+;%        (with-current-buffer (org-noter--session-notes-buffer session)
+;%          (org-with-wide-buffer
+;%           (goto-char (org-element-property :begin ast))
+;%           (if arg
+;%               (org-entry-delete nil org-noter-property-note-location)
+;%             (org-entry-put nil org-noter-property-note-location
+;%                            (org-noter--pretty-print-location location))))))))
+;%   (with-eval-after-load 'pdf-annot
+;%     (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
+;% (message "Finished org-noter configuration.")
+
+
+;%(use-package org-noter
+;%  :straight (org-noter :type git :host github :repo "weirdNox/org-noter")      
+;%  :after org
+;%  :config
+;%  ;% Your org-noter config ........
+;%  :config
+;%  (setq
+;%    org_notes (concat (getenv "HOME") "/org-roam/")
+;%    zot_bib (concat (getenv "HOME") "/Documents/global.bib")
+;%    org-directory org_notes
+;%    deft-directory org_notes
+;%    org-roam-directory org_notes
+;%    ;% keep an empty line between headings and content in Org file
+;%    org-noter-separate-notes-from-heading t)
+;%  (require 'org-noter-pdftools))
+
+;%(use-package org-pdftools
+;%  :straight (org-pdftools :type git :host github :repo "fuxialexander/org-pdftools") 
+;%  :hook (org-mode . org-pdftools-setup-link))
+;%
+;%(use-package org-noter-pdftools
+;%  :after org-noter
+;%  :config
+;%  ;% Add a function to ensure precise note is inserted
+;%  (defun org-noter-pdftools-insert-precise-note (&optional toggle-no-questions)
+;%    (interactive "P")
+;%    (org-noter--with-valid-session
+;%     (let ((org-noter-insert-note-no-questions (if toggle-no-questions
+;%                                                   (not org-noter-insert-note-no-questions)
+;%                                                 org-noter-insert-note-no-questions))
+;%           (org-pdftools-use-isearch-link t)
+;%           (org-pdftools-use-freepointer-annot t))
+;%       (org-noter-insert-note (org-noter--get-precise-info)))))
+;%
+;%  ;% fix https://github.com/weirdNox/org-noter/pull/93/commits/f8349ae7575e599f375de1be6be2d0d5de4e6cbf
+;%  (defun org-noter-set-start-location (&optional arg)
+;%    "When opening a session with this document, go to the current location.
+;%With a prefix ARG, remove start location."
+;%    (interactive "P")
+;%    (org-noter--with-valid-session
+;%     (let ((inhibit-read-only t)
+;%           (ast (org-noter--parse-root))
+;%           (location (org-noter--doc-approx-location (when (called-interactively-p 'any) 'interactive))))
+;%       (with-current-buffer (org-noter--session-notes-buffer session)
+;%         (org-with-wide-buffer
+;%          (goto-char (org-element-property :begin ast))
+;%          (if arg
+;%              (org-entry-delete nil org-noter-property-note-location)
+;%            (org-entry-put nil org-noter-property-note-location
+;%                           (org-noter--pretty-print-location location))))))))
+;%  (with-eval-after-load 'pdf-annot
+;%    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
+;%;;;; pdf-tools-org-noter-helpers
+;%(use-package pdf-tools-org-noter-helpers
+;%  :straight (pdf-tools-org-noter-helpers :type git :host github :repo "analyticd/pdf-tools-org-noter-helpers"))
+(message "Finished org-noter configuration.")
+
+
+(message "Start org-pomodoro configuration.")
+;;;; org-pomodoro
+(use-package org-pomodoro
+    :straight (org-pomodoro :type git :host github :repo "marcinkoziej/org-pomodoro")
+    :commands  (org-pomodoro)
+    :config
+    (setq alert-user-configuration (quote ((((:category . "org-pomodoro")) libnotify nil)))))
+
+;% add hook to enable automated start of the next pom after a break.
+;% Source: https://github.com/marcinkoziej/org-pomodoro/issues/32
+;% (add-hook 'org-pomodoro-break-finished-hook
+;%           (lambda ()
+;%             (interactive)
+;%             (point-to-register 1)
+;%             (org-clock-goto)
+;%             (org-pomodoro '(25))
+;%             (register-to-point 1)
+;%             (shell-command-to-string "open -a tomighty.app")
+;%             ))
+
+(use-package sound-wav)
+(setq org-pomodoro-ticking-sound-p nil)
+(setq org-pomodoro-ticking-sound-states '(:pomodoro :short-break :long-break))
+(setq org-pomodoro-ticking-sound-states '(:pomodoro))
+(setq org-pomodoro-ticking-frequency 1)
+(setq org-pomodoro-audio-player "mplayer")
+(setq org-pomodoro-finished-sound-args "-volume 0.9")
+(setq org-pomodoro-long-break-sound-args "-volume 0.9")
+(setq org-pomodoro-short-break-sound-args "-volume 0.9")
+(setq org-pomodoro-ticking-sound-args "-volume 0.3")
+
+(global-set-key (kbd "C-c o") 'org-pomodoro)
+(message "Finished org-pomodoros configuration.")
+
+
+(message "Start configuration of org-ref.")
+;;;; org-ref
+;% Set the case of the Author and Title to Capitalize with customize.
+(use-package org-ref
+     :straight (org-ref :type git :host github :repo "jkitchin/org-ref")
+     :init
+    (use-package bibtex)
+    (setq bibtex-autokey-year-length 4
+          bibtex-autokey-name-year-separator ""
+          bibtex-autokey-year-title-separator ""
+          bibtex-autokey-titleword-separator ""
+          bibtex-autokey-titlewords 9
+          bibtex-autokey-titlewords-stretch 9
+          bibtex-autokey-titleword-length 15)
+    ;% H is the hyper key. I have bound H to Fn. For the MacAlly keyboard, it is bound to right-command.
+    (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
+    ;% (use-package org-ref-ivy)
+    (setq org-ref-insert-link-function 'org-ref-insert-link-hydra/body
+                org-ref-insert-cite-function 'org-ref-cite-insert-ivy
+                org-ref-insert-label-function 'org-ref-insert-label-link
+                org-ref-insert-ref-function 'org-ref-insert-ref-link
+                org-ref-cite-onclick-function (lambda (_) (org-ref-citation-hydra/body)))
+    ; (use-package org-ref-arxiv)
+    ; (use-package org-ref-pubmed)
+    ; (use-package org-ref-wos)
+)
+(message "Finished configuration of org-ref.")
+
+
+(message "Start bibtex-completion-bibliography configuration of org-ref.")
+(setq bibtex-completion-bibliography '("/Users/blaine/Documents/global.bib")
+    bibtex-completion-library-path '("/Users/blaine/0papersLabeled/" "/Users/blaine/0booksLabeled/")
+    bibtex-completion-notes-path "/Users/blaine/org-roam/references/notes/"
+    bibtex-completion-notes-template-multiple-files "* ${author-or-editor}, ${title}, ${journal}, (${year}) :${=type=}: \n\nSee [[cite:&${=key=}]]\n"
+    bibtex-completion-additional-search-fields '(keywords)
+    bibtex-completion-display-formats
+    '((article       . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${journal:40}")
+      (inbook        . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} Chapter ${chapter:32}")
+      (incollection  . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+      (inproceedings . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+      (t             . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*}"))
+    bibtex-completion-pdf-open-function
+    (lambda (fpath)
+      (call-process "open" nil 0 nil fpath)))
+
+(setq bibtex-autokey-year-length 4
+      bibtex-autokey-name-year-separator "-"
+      bibtex-autokey-year-title-separator "-"
+      bibtex-autokey-titleword-separator "-"
+      bibtex-autokey-titlewords 2
+      bibtex-autokey-titlewords-stretch 1
+      bibtex-autokey-titleword-length 5)
+(message "Finished bibtex-completion-bibliography configuration of org-ref.")
+
+
+(message "Start org-roam configurations")
+;;;; Basic org-roam config
+(use-package org-roam
+   :straight (org-roam :type git :host github :repo "org-roam/org-roam")
+   :custom
+   (org-roam-directory (file-truename "/Users/blaine/org-roam/"))
+   :bind (("C-c n l" . org-roam-buffer-toggle)
+          ("C-c n f" . org-roam-node-find)
+          ("C-c n g" . org-roam-graph)
+          ("C-c n i" . org-roam-node-insert)
+          ("C-c n c" . #'org-id-get-create)
+          ;; Dailies
+          ("C-c n j" . org-roam-dailies-capture-today))
+   :config
+   ;% If you're using a vertical completion framework, you might want a more informative completion interface
+   (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+   (org-roam-db-autosync-mode))
+   ;%(org-roam-ui-mode))
+   ;% If using org-roam-protocol
+   ;%(use-package org-roam-protocol))
+;% Following https://jethrokuan.github.io/org-roam-guide/
+(message "Start org-roam-capture template configurations, line 1721")
+
+; (setq org-roam-capture-templates
+;       '(("p" "permanent" plain
+;          "%?"
+;          :if-new (file+head "main/${slug}.org" "#+title: ${title}\n\n* Note type: permanent\n\n* References\n\n* Backlinks\n\n#+created_at: %U\n#+last_modified: %U\n")
+;          :immediate-finish t
+;          :unnarrowed t)
+;          ;; citar literature note
+;         ;% ("n" "literature note" plain
+;         ;%  "%?"
+;         ;%  :target (file+head "%(expand-file-name (or citar-org-roam-subdir \"\") org-roam-directory)/${citar-citekey}.org"
+;         ;%             "#+title: ${citar-citekey}.\n Article title: ${note-title}.\n Year: ${citar-year} \n  Keywords: ${citar-keywords} \n Note type: literature\n\n\n#+created: %U\n#+last_modified: %U\n\n")
+;         ;%           :unnarrowed t)
+;         ("r" "reference" plain "%?"
+;          :if-new
+;          (file+head "reference/${title}.org" "#+title: ${title}\n\n\n\n\n* References\n\n* Backlinks\n\n#+created_at: %U\n#+last_modified: %U\n")
+;          :immediate-finish t
+;          :unnarrowed t)
+;          ("l" "clipboard" plain #'org-roam-capture--get-point "%i%a"
+;          :file-name "%<%Y%m%d%H%M%S>-${slug}"
+;          :head "#+title: ${title}\n#+created: %u\n#+last_modified: %U\n#+ROAM_TAGS: %?"
+;          :unnarrowed t
+;          :prepend t
+;          :jump-to-captured t)
+;          ;% Vidianos G's config with ivy-bibtex
+;          ("v" "bibliography reference" plain
+;              "%?"
+;              : if-new
+;              (file+head "ref/${citekey}.org" "#+title: ${title}\n
+;               ,#+filetags: ${entry-type}
+;          - keywords :: ${keywords}
+;          - tags ::
+;
+;          ,* Analysis of ${entry-type} by ${author}
+;
+;
+;
+;          * References\n\n* Backlinks\n\n#+created_at: %U\n#+last_modified: %U\n
+;          :PROPERTIES:
+;          :URL: ${Url}
+;          :NOTER_DOCUMENT: ${file}
+;          :NOTER_PAGE:
+;          :END:")
+;              :unnarrowed t
+;              :jump-to-captured t)
+;         ("b" "bibliography notes" plain             ; Org-noter integration
+;           (file "~/org-roam/references/notes/notes-template.org")
+;                  :target (file+head "references/notes/${citekey}.org"
+;                  "#+title: ${title}\n :article:\n\n\n\n\n* References\n\n* Backlinks\n\n#+created_at: %U\n#+last_modified: %U\n")
+;                   :empty-lines 1)
+;         ("a" "article" plain "%?"
+;          :if-new
+;          (file+head "articles/${title}.org" "#+title: ${title}\n :article:\n\n\n\n\n* References\n\n* Backlinks\n\n#+created_at: %U\n#+last_modified: %U\n")
+;          :immediate-finish t
+;          :unnarrowed t)))
+; (setq org-roam-node-display-template
+;     (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+;% Writing technical documents requires us to write in paragraphs,
+;% whereas org mode by default is intended to be used as an outliner,
+;% to get around this problem, setting up org-export to preserve line breaks is useful
+;% (setq org-export-preserve-breaks t)
+(message "Finished org-roam configurations.")
+
+
+(message "Start org-roam-bibtex.")
+(use-package org-roam-bibtex
+  :straight (org-roam-bibtex :type git :host github :repo "org-roam/org-roam-bibtex")    
+  :after org-roam
+  :config
+  ;(require 'org-ref)) ; optional: if using Org-ref v2 or v3 citation links
+(message "Finished org-roam-bibtex.")
+
+
+
+
+;% Place point on link to image. Left-click to display image in another buffer. Enter C-c t to display the code of the link for easy editing.
+;% Place point on equation. Enter C-c t to render it with MathJax. Left click on the rendered equation to switch back to the code.
+;% Put multiline code from mathpix between double dollar signs and treat as being on one line.
+;% This trick does not work with the equation environment compressed to one line. You have to use M-x math-preview-region.
+;% I modified this from https://emacs.stackexchange.com/questions/59151/how-can-i-switch-a-preview-image-in-an-org-mode-buffer-to-its-source-block
+;% 
+;% I ran out of time to determine how to render an active region. I need to find the analog of the latex-fragment:
+;% ('latex-???? (math-preview-region))
+;% ???? has to be some kind of an org-element-type. org-latex-section does not work.
+;% This would enable using this application of the math-preview-region to render equation environments.
+(defun bhmm/toggle-state-at-point ()
+  (interactive)
+  (let ((ctx (org-element-context)))
+    (pcase (org-element-type ctx)
+      ('link           (org-toggle-link-display))
+      ('latex-fragment (math-preview-at-point)))))
+
+;% (define-key org-mode-map (kbd "C-c t") #'bhmm/toggle-state-at-point)
+(message "End toggle-state-at-point for use with images and equations.")
+
+(use-package ox-typst
+  :straight (ox-typst :type git :host github :repo "jmpunkt/ox-typst")
+  :after org)
+
+
+
+
+(message "Finished O package configurations")
 
 (message "Start P package configurations")
 ;;; P
@@ -713,96 +1207,180 @@ Also see `prot-window-delete-popup-frame'." command)
 ;;;; tmux-pane
 (use-package tmux-pane
    :straight (tmux-pane :type git :host github :repo "laishulu/emacs-tmux-pane"))
-
-;;;; treemacs
-;%  Provides sidebar access to contents of the treemacs project directory 
+   
+   
 (use-package treemacs
-   :straight t
-   :defer t
-   :init
-   (with-eval-after-load 'winum
-     (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-   :config
-   (progn
-     (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
-           treemacs-deferred-git-apply-delay        0.5
-           treemacs-directory-name-transformer      #'identity
-           treemacs-display-in-side-window          t
-           treemacs-eldoc-display                   'simple
-           treemacs-file-event-delay                2000
-           treemacs-file-extension-regex            treemacs-last-period-regex-value
-           treemacs-file-follow-delay               0.2
-           treemacs-file-name-transformer           #'identity
-           treemacs-follow-after-init               t
-           treemacs-expand-after-init               t
-           treemacs-find-workspace-method           'find-for-file-or-pick-first
-           treemacs-git-command-pipe                ""
-           treemacs-goto-tag-strategy               'refetch-index
-           treemacs-header-scroll-indicators        '(nil . "^^^^^^")
-           treemacs-hide-dot-git-directory          t
-           treemacs-indentation                     2
-           treemacs-indentation-string              " "
-           treemacs-is-never-other-window           nil
-           treemacs-max-git-entries                 5000
-           treemacs-missing-project-action          'ask
-           treemacs-move-files-by-mouse-dragging    t
-           treemacs-move-forward-on-expand          nil
-           treemacs-no-png-images                   nil
-           treemacs-no-delete-other-windows         t
-           treemacs-project-follow-cleanup          nil
-           treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-           treemacs-position                        'left
-           treemacs-read-string-input               'from-child-frame
-           treemacs-recenter-distance               0.1
-           treemacs-recenter-after-file-follow      nil
-           treemacs-recenter-after-tag-follow       nil
-           treemacs-recenter-after-project-jump     'always
-           treemacs-recenter-after-project-expand   'on-distance
-           treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
-           treemacs-project-follow-into-home        nil
-           treemacs-show-cursor                     nil
-           treemacs-show-hidden-files               t
-           treemacs-silent-filewatch                nil
-           treemacs-silent-refresh                  nil
-           treemacs-sorting                         'alphabetic-asc
-           treemacs-select-when-already-in-treemacs 'move-back
-           treemacs-space-between-root-nodes        t
-           treemacs-tag-follow-cleanup              t
-           treemacs-tag-follow-delay                1.5
-           treemacs-text-scale                      nil
-           treemacs-user-mode-line-format           nil
-           treemacs-user-header-line-format         nil
-           treemacs-wide-toggle-width               70
-           treemacs-width                           35
-           treemacs-width-increment                 1
-           treemacs-width-is-initially-locked       t
-           treemacs-workspace-switch-cleanup        nil)
-     ;; The default width and height of the icons is 22 pixels. If you are
-     ;; using a Hi-DPI display, uncomment this to double the icon size.
-     ;;(treemacs-resize-icons 44)
-     (treemacs-follow-mode t)
-     (treemacs-filewatch-mode t)
-     (treemacs-fringe-indicator-mode 'always)
-     (when treemacs-python-executable
-       (treemacs-git-commit-diff-mode t))
-     (pcase (cons (not (null (executable-find "git")))
-                  (not (null treemacs-python-executable)))
-       (`(t . t)
-        (treemacs-git-mode 'deferred))
-       (`(t . _)
-        (treemacs-git-mode 'simple)))
-     (treemacs-hide-gitignored-files-mode nil))
-   :bind
-   (:map global-map
-         ("M-0"       . treemacs-select-window)
-         ("C-x t 1"   . treemacs-delete-other-windows)
-         ("C-x t t"   . treemacs)
-         ("C-x t d"   . treemacs-select-directory)
-         ("C-x t B"   . treemacs-bookmark)
-         ("C-x t C-t" . treemacs-find-file)
-         ("C-x t M-t" . treemacs-find-tag)))
+  :straight t
+  :defer t
+  :init
+  (with-eval-after-load 'winum
+    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+  :config
+  (progn
+    (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
+          treemacs-deferred-git-apply-delay        0.5
+          treemacs-directory-name-transformer      #'identity
+          treemacs-display-in-side-window          t
+          treemacs-eldoc-display                   'simple
+          treemacs-file-event-delay                2000
+          treemacs-file-extension-regex            treemacs-last-period-regex-value
+          treemacs-file-follow-delay               0.2
+          treemacs-file-name-transformer           #'identity
+          treemacs-follow-after-init               t
+          treemacs-expand-after-init               t
+          treemacs-find-workspace-method           'find-for-file-or-pick-first
+          treemacs-git-command-pipe                ""
+          treemacs-goto-tag-strategy               'refetch-index
+          treemacs-header-scroll-indicators        '(nil . "^^^^^^")
+          treemacs-hide-dot-git-directory          t
+          treemacs-indentation                     2
+          treemacs-indentation-string              " "
+          treemacs-is-never-other-window           nil
+          treemacs-max-git-entries                 5000
+          treemacs-missing-project-action          'ask
+          treemacs-move-files-by-mouse-dragging    t
+          treemacs-move-forward-on-expand          nil
+          treemacs-no-png-images                   nil
+          treemacs-no-delete-other-windows         t
+          treemacs-project-follow-cleanup          nil
+          treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+          treemacs-position                        'left
+          treemacs-read-string-input               'from-child-frame
+          treemacs-recenter-distance               0.1
+          treemacs-recenter-after-file-follow      nil
+          treemacs-recenter-after-tag-follow       nil
+          treemacs-recenter-after-project-jump     'always
+          treemacs-recenter-after-project-expand   'on-distance
+          treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
+          treemacs-project-follow-into-home        nil
+          treemacs-show-cursor                     nil
+          treemacs-show-hidden-files               t
+          treemacs-silent-filewatch                nil
+          treemacs-silent-refresh                  nil
+          treemacs-sorting                         'alphabetic-asc
+          treemacs-select-when-already-in-treemacs 'move-back
+          treemacs-space-between-root-nodes        t
+          treemacs-tag-follow-cleanup              t
+          treemacs-tag-follow-delay                1.5
+          treemacs-text-scale                      nil
+          treemacs-user-mode-line-format           nil
+          treemacs-user-header-line-format         nil
+          treemacs-wide-toggle-width               70
+          treemacs-width                           35
+          treemacs-width-increment                 1
+          treemacs-width-is-initially-locked       t
+          treemacs-workspace-switch-cleanup        nil)
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (when treemacs-python-executable
+      (treemacs-git-commit-diff-mode t))
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null treemacs-python-executable)))
+      (`(t . t)
+       (treemacs-git-mode 'deferred))
+      (`(t . _)
+       (treemacs-git-mode 'simple)))
+    (treemacs-hide-gitignored-files-mode nil))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t d"   . treemacs-select-directory)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))  
 
-;;;; treemacs-protjectile         
+; ;;;; treemacs
+; ;%  Provides sidebar access to contents of the treemacs project directory
+; (use-package treemacs
+;    :straight t
+;    :defer t
+;    :init
+;    (with-eval-after-load 'winum
+;      (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+;    :config
+;    (progn
+;      (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
+;            treemacs-deferred-git-apply-delay        0.5
+;            treemacs-directory-name-transformer      #'identity
+;            treemacs-display-in-side-window          t
+;            treemacs-eldoc-display                   'simple
+;            treemacs-file-event-delay                2000
+;            treemacs-file-extension-regex            treemacs-last-period-regex-value
+;            treemacs-file-follow-delay               0.2
+;            treemacs-file-name-transformer           #'identity
+;            treemacs-follow-after-init               t
+;            treemacs-expand-after-init               t
+;            treemacs-find-workspace-method           'find-for-file-or-pick-first
+;            treemacs-git-command-pipe                ""
+;            treemacs-goto-tag-strategy               'refetch-index
+;            treemacs-header-scroll-indicators        '(nil . "^^^^^^")
+;            treemacs-hide-dot-git-directory          t
+;            treemacs-indentation                     2
+;            treemacs-indentation-string              " "
+;            treemacs-is-never-other-window           nil
+;            treemacs-max-git-entries                 5000
+;            treemacs-missing-project-action          'ask
+;            treemacs-move-files-by-mouse-dragging    t
+;            treemacs-move-forward-on-expand          nil
+;            treemacs-no-png-images                   nil
+;            treemacs-no-delete-other-windows         t
+;            treemacs-project-follow-cleanup          nil
+;            treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+;            treemacs-position                        'left
+;            treemacs-read-string-input               'from-child-frame
+;            treemacs-recenter-distance               0.1
+;            treemacs-recenter-after-file-follow      nil
+;            treemacs-recenter-after-tag-follow       nil
+;            treemacs-recenter-after-project-jump     'always
+;            treemacs-recenter-after-project-expand   'on-distance
+;            treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
+;            treemacs-project-follow-into-home        nil
+;            treemacs-show-cursor                     nil
+;            treemacs-show-hidden-files               t
+;            treemacs-silent-filewatch                nil
+;            treemacs-silent-refresh                  nil
+;            treemacs-sorting                         'alphabetic-asc
+;            treemacs-select-when-already-in-treemacs 'move-back
+;            treemacs-space-between-root-nodes        t
+;            treemacs-tag-follow-cleanup              t
+;            treemacs-tag-follow-delay                1.5
+;            treemacs-text-scale                      nil
+;            treemacs-user-mode-line-format           nil
+;            treemacs-user-header-line-format         nil
+;            treemacs-wide-toggle-width               70
+;            treemacs-width                           35
+;            treemacs-width-increment                 1
+;            treemacs-width-is-initially-locked       t
+;            treemacs-workspace-switch-cleanup        nil)
+;      ;; The default width and height of the icons is 22 pixels. If you are
+;      ;; using a Hi-DPI display, uncomment this to double the icon size.
+;      ;;(treemacs-resize-icons 44)
+;      (treemacs-follow-mode t)
+;      (treemacs-filewatch-mode t)
+;      (treemacs-fringe-indicator-mode 'always)
+;      (when treemacs-python-executable
+;        (treemacs-git-commit-diff-mode t))
+;      (pcase (cons (not (null (executable-find "git")))
+;                   (not (null treemacs-python-executable)))
+;        (`(t . t)
+;         (treemacs-git-mode 'deferred))
+;        (`(t . _)
+;         (treemacs-git-mode 'simple)))
+;      (treemacs-hide-gitignored-files-mode nil))
+;    :bind
+;    (:map global-map
+;          ("M-0"       . treemacs-select-window)
+;          ("C-x t 1"   . treemacs-delete-other-windows)
+;          ("C-x t t"   . treemacs)
+;          ("C-x t d"   . treemacs-select-directory)
+;          ("C-x t B"   . treemacs-bookmark)
+;          ("C-x t C-t" . treemacs-find-file)
+;          ("C-x t M-t" . treemacs-find-tag)))
+;
+;;;; treemacs-protjectile
 (use-package treemacs-projectile
   :after (treemacs projectile)
   :straight t)
@@ -811,9 +1389,9 @@ Also see `prot-window-delete-popup-frame'." command)
   :hook (dired-mode . treemacs-icons-dired-enable-once)
   :straight t)
 
-;;;; treemacs-perspective 
+;;;; treemacs-perspective
 ;%  treemacs-perspective if you use perspective.el vs. persp-mode
-(use-package treemacs-persp 
+(use-package treemacs-persp
   :after (treemacs persp-mode) ;;or perspective vs. persp-mode
   :straight t
   :config (treemacs-set-scope-type 'Perspectives))
