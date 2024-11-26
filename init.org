@@ -1,10 +1,9 @@
 #+TITLE: Emacs Configuration
 #+AUTHOR: Your Name
-#+OPTIONS: toc:nil
 
 * The org-mode verson of the ~few packages~ init.el configuration available at https://github.com/MooersLab/dsw-2024-org-mode-init.
 - The number of semicolons indicates the headline level.
-- The combintatoin of a semicolon and a precent sign denotes a comment to be converted to prose in the org file.
+- The combination of a semicolon and a percent sign denotes a comment to be converted to prose in the org file.
 - The lines without semicolons in the left margin wind up in code blocks.
 
 - I use the bash command  alias e29f='/Applications/Emacs29.4.app/Contents/MacOS/Emacs --init-directory ~/e29fewpackages --debug-init'
@@ -138,7 +137,6 @@ Optionally specify the file to save cursor positions
 ** Start user-defined functions section
 #+BEGIN_SRC emacs-lisp
 (message "User defined functions in alphabetical order.") 
-
 #+END_SRC
 *** create-org-table-with-caption
 This interactive function prompts the user for the number of rows, columns, and caption of the table.
@@ -156,9 +154,6 @@ This interactive function prompts the user for the number of rows, columns, and 
     (dotimes (_ cols)
       (insert "----+"))
     (insert "\n|")
-#+END_SRC
-****** (insert "|")
-#+BEGIN_SRC emacs-lisp
     (dotimes (col cols)
       (insert (format " %c |" (+ ?A col))))
     (insert "\n|")
@@ -175,7 +170,7 @@ This interactive function prompts the user for the number of rows, columns, and 
       (insert "----+"))))
 #+END_SRC
 *** find file and go to line number
-interactively enter the file name and line number in the minibuffer
+Interactively enter the file name and line number in the minibuffer
 #+BEGIN_SRC emacs-lisp
 (defun find-file-at-line (file line)
   "Open FILE on LINE."
@@ -232,7 +227,7 @@ The function prompts the user for the image file path and name, the label, and t
 #+END_SRC
 *** Convert a selected latex list of items to a org-mode list
 To use this function, select the region containing the LaTeX list and run:
-M-x latex-to-org-list-region
+`M-x latex-to-org-list-region`
 #+BEGIN_SRC emacs-lisp
 (defun latex-to-org-list-region (start end)
   "Convert a LaTeX itemize list in the region to an Org-mode list."
@@ -242,7 +237,10 @@ M-x latex-to-org-list-region
     (while (re-search-forward "\\\\item" end t)
       (replace-match "-"))))
 #+END_SRC
-;;; Open the Daily Log headline while keeping the other headline closed.
+
+
+*** Open the Daily Log headline while keeping the other headline closed.
+#+BEGIN_SRC emacs-lisp
 (defun org-open-specific-headline (headline)
 "Open the specific top-level HEADLINE while keeping others closed."
 (goto-char (point-min))
@@ -256,6 +254,7 @@ M-x latex-to-org-list-region
 (add-hook 'org-mode-hook 'my-org-mode-setup)
 ;;; Moves cursor to headline with the restart tag.
 ;%  Waits for the  my-org-mode-setup function to run first.
+
 (defun my-open-log-file-and-move-above-tag ()
 "If the current buffer's file name starts with 'log', move the cursor above a second-level headline with a specific tag."
 (let ((tag "restart-here"))
@@ -265,7 +264,6 @@ M-x latex-to-org-list-region
 (if (re-search-forward (format "^\\*\\* .*:%s:" tag) nil t)
 (forward-line -1)
 (message "Tag not found")))))
-
 ;defun org-open-specific-headline (headline)
 ; "Open the specific top-level HEADLINE while keeping others closed.
 ;hen move the cursor to the line above the second-level headline with the tag."
@@ -278,19 +276,20 @@ M-x latex-to-org-list-region
 ;         (beginning-of-line)
 ;         (forward-line -1)))
 ;   (message "Headline not found")))
-
-
-
+#+END_SRC
+*** my-delayed-org-setup
+#+BEGIN_SRC emacs-lisp
 (defun my-delayed-org-setup ()
 "Run my-org-mode-setup and then my-open-log-file-and-move-above-tag."
 (my-org-mode-setup)
 (run-at-time "0.1 sec" nil 'my-open-log-file-and-move-above-tag))
-
 (add-hook 'org-mode-hook 'my-delayed-org-setup)
+#+END_SRC
+
 *** Open a file and move to a headline with a specific tag
 The default tag is restart-here.
 Example usage:
-(open-org-file-and-move-to-tag "~/path/to/your/file.org" "your-tag")
+`(open-org-file-and-move-to-tag "~/path/to/your/file.org" "your-tag")`
 #+BEGIN_SRC emacs-lisp
 (defun open-org-file-and-move-to-tag (file &optional tag)
   "Open an Org file and move the cursor below a headline with a specific TAG.
@@ -573,7 +572,7 @@ This can be complex to configure.
 ***** Stoup's fonts for org
 These settings have been added to the customization section.
 They can only be called once in an init.el file.
-#+BEGIN-COMMENT
+#+BEGIN_COMMENT
 (let* ((variable-tuple
 (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
 ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))

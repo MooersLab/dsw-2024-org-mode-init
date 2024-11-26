@@ -3,7 +3,8 @@
 
 # Emacs configuration file for writing research papers in Org-mode 
 
-This presentation is for the 2024 November 22 Oklahoma Data Science Workshop meeting.
+This configuration file accompanies the 2024 November 22 Oklahoma Data Science Workshop meeting.
+The `init.org` version of the `init.el` file is rendered nicely by GitHub.
 
 This configuration file, `init.el`, focuses on writing research papers in org-mode in `GNU Emacs`.
 It was meant to use default settings, but I included packages I enjoy using (e.g., treemacs, undo-tree, vertico, marginalia, citar, yasnippets, pdf-tools).
@@ -48,6 +49,7 @@ I use `e29f +500 logXXXX.org` to open `logXXXX.org` in the current directory on 
 |:------------|:----------------------------------------------------------------------------------------------------------------------------------------|:------------------|
 | Version 0.1 |   Added badges, funding, and update table.  Initial commit.                                                                             | 2024 November 10  |
 | Version 0.2 |   Minor edits                                                                                                                           | 2024 November 22  |
+| Version 0.3 |   Add init file in org-mode format for rendering by GitHub.                                                                             | 2024 November 25  |
 
 ## Acknowledgments
 ### Sources of funding
