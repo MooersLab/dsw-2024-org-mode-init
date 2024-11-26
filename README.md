@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/static/v1?label=dsw-2024-org-mode-init&message=0.1&color=brightcolor)
+![Version](https://img.shields.io/static/v1?label=dsw-2024-org-mode-init&message=0.4&color=brightcolor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 # Emacs configuration file for writing research papers in Org-mode 
@@ -42,6 +42,32 @@ alias ef='/Applications/Emacs29.4.app/Contents/MacOS/Emacs --init-directory ~/e2
 
 I use `e29f +500 logXXXX.org` to open `logXXXX.org` in the current directory on startup and to place the cursor at line 500.
 
+
+## Enhance your editing experience by using the Emacs server
+
+Enter `M-x server-start' in a Emacs GUI session to start the Emacs server.
+Then you can open instantly another instance of the same session in another terminal window by using the following alias.
+
+```bash
+alias efmxc='/Applications/Emacs29.4.app/Contents/MacOS/bin/emacsclient29 -c'
+```
+
+Use it by entering `efmxc filename.org`.
+
+You may into trouble if another Emacs server is running.
+Kill it with the following command.
+The `-s` option is for the name of the server.
+
+```bash
+alias efk="/Applications/Emacs29.4.app/Contents/MacOS/bin/emacsclient29 -s ef29server --eval '(kill-emacs)'"
+```
+
+The same opened buffers will be present.
+Enter `C-x #` to close a file and close that instance of the server.
+The emacslient makee Emacs more useful for short edits where Neovim or Textmate might otherwise be used due to their fast startup times.
+
+
+
   
 ## Update history
 
@@ -50,6 +76,7 @@ I use `e29f +500 logXXXX.org` to open `logXXXX.org` in the current directory on 
 | Version 0.1 |   Added badges, funding, and update table.  Initial commit.                                                                             | 2024 November 10  |
 | Version 0.2 |   Minor edits                                                                                                                           | 2024 November 22  |
 | Version 0.3 |   Add init file in org-mode format for rendering by GitHub.                                                                             | 2024 November 25  |
+| Version 0.4 |   Updated the init.el file with org-roam, org-ref, citar, org-roam-bibtex, and org-roam-bibtex - citar integration. Added a function to open bibNotes.org in ~/bibNotes for the annotated bibliography. This should complete the tool chain. | 2024 November 26  |
 
 ## Acknowledgments
 ### Sources of funding
