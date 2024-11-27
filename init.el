@@ -100,7 +100,6 @@
 ;%  ***************************** User-defined functions section ***********************************************  
 ;; Start user-defined functions section
 (message "User defined functions in alphabetical order.") 
-  
 ;;; convert-init-el-to-org    
 (defun convert-init-el-to-org (input-file output-file)
       "Convert an Emacs init.el file to an Org-mode file."
@@ -138,8 +137,7 @@
             (when in-src-block
               (insert "#+END_SRC\n"))))))
 ;% Example usage:
-;% (convert-init-el-to-org "~/path/to/init.el" "~/path/to/init.org")    
-    
+;% (convert-init-el-to-org "~/path/to/init.el" "~/path/to/init.org")
 ;;; create-org-table-with-caption
 ;%  This interactive function prompts the user for the number of rows, columns, and caption of the table.
 (defun create-org-table-with-caption ()
@@ -176,7 +174,6 @@
   (interactive "fFile: \nNLine: \n")
   (find-file file)
   (goto-line line))
-  
 ;;; ffap: find file at point
 ;%  https://unix.stackexchange.com/questions/691444/how-do-i-open-a-file-at-specific-line-in-a-running-emacs
 ;%  have ffap pick up line number and goto-line
@@ -303,13 +300,13 @@ The regular expression ^\\*\\* .*:%s: is used to search for second-level headlin
 ;% Open template file renmaed with the citekey under the point.
 ;% This file is for use with an annotated bibliography.
 ;% Developed with the help of CoPilot.
-(defun open-new-bibnote-on-citekey ()
+(defun open-new-abibnote-on-citekey ()
   "Open a template file in Org-mode, rename it to the citekey under the cursor, 
-  and save it to '~/bibNote/'. Citar has a function that will insert the citekey."
+  and save it to '~/abibNotes/'. Citar has a function that will insert the citekey."
   (interactive)
   (let* ((citekey (thing-at-point 'word t))
-         (template-file "~/bibNotes/templates/abib-template.org")
-         (output-dir "~/bibNotes/")
+         (template-file "~/abibNotes/templates/abib-template.org")
+         (output-dir "~/abibNotes/")
          (output-file (concat output-dir citekey ".org")))
     (unless (file-exists-p output-dir)
       (make-directory output-dir t))
@@ -319,7 +316,7 @@ The regular expression ^\\*\\* .*:%s: is used to search for second-level headlin
           (find-file output-file)
           (message "Template file saved as %s" output-file))
       (message "Citekey or template file not found"))))
-(global-set-key (kbd "C-c n") 'open-new-bibnote-on-citekey)
+(global-set-key (kbd "C-c z") 'open-new-abibnote-on-citekey)
 ;;;; play-youtube-video 
 (defun play-youtube-video (url)
   "Play a YouTube video with mpv."
@@ -368,14 +365,11 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%  
 ;%  alias oc="emacslient -e '(prot-window-popup-org-capture)'"
 ;%  emacsclient -e '(prot-window-popup-tmr)'
-
 ;;; Reload the initialization file after editing it in Emacs
 (defun reload-init-e29f ()
   "Reload the init.el file for e29org. Edit the path to suite your needs."
   (interactive)
   (load-file "~/e29fewpackages/init.el"))
-  
-
 ;;; Spawn a new shell with the supplied title 
 (defun spawn-shell (name)
   "Invoke shell test"
@@ -384,8 +378,6 @@ Also see `prot-window-delete-popup-frame'." command)
   (shell (current-buffer))
   (process-send-string nil "echo 'test1'\n")
   (process-send-string nil "echo 'test2'\n"))
-
-  
 ;;; Move the cursor to the minibuffer without using the mouse
 ;%  From video https://www.youtube.com/watch?v=X8c_TrGfYcM&t=15s using Emacs as a multiplexer."
 ;%  Derived from http://stackoverflow.com/a/4116113/446256.
@@ -397,8 +389,6 @@ Also see `prot-window-delete-popup-frame'." command)
     (error "Minibuffer is not active")))
 (global-set-key "\C-cm" 'switch-to-minibuffer) ;; Bind to `C-c m' for minibuffer.
 (message "End of user-defined functions.")
-
-
 ;; Package configuration section
 (message "Start package configurations in alphabetical order by package name.")
 (message "Start A package configurations")
@@ -451,14 +441,14 @@ Also see `prot-window-delete-popup-frame'." command)
          :unnarrowed t)))
 (setq citar-org-roam-capture-template-key "n")
 
-(citar-register-notes-source
- 'orb-citar-source (list :name "Org-Roam Notes"
-        :category 'org-roam-node
-        :items #'citar-org-roam--get-candidates
-        :hasitems #'citar-org-roam-has-notes
-        :open #'citar-org-roam-open-note
-        :create #'orb-citar-edit-note
-        :annotate #'citar-org-roam--annotate))
+; (citar-register-notes-source
+;  'orb-citar-source (list :name "Org-Roam Notes"
+;         :category 'org-roam-node
+;         :items #'citar-org-roam--get-candidates
+;         :hasitems #'citar-org-roam-has-notes
+;         :open #'citar-org-roam-open-note
+;         :create #'orb-citar-edit-note
+;         :annotate #'citar-org-roam--annotate))
 
 (setq citar-notes-source 'orb-citar-source)
 
@@ -835,6 +825,12 @@ Also see `prot-window-delete-popup-frame'." command)
 (global-set-key (kbd "C-c x") 'org-cc-display-notes)
 (message "Finished org-cc.")
 
+(use-package org-noter
+             :straight
+             (:repo "org-noter/org-noter"
+                    :host github
+                    :type git
+                    :files ("*.el" "modules/*.el")))
 
 ;% (message "Started org-noter configuration.")
 ;% (use-package org-noter
@@ -976,36 +972,36 @@ Also see `prot-window-delete-popup-frame'." command)
 (message "Finished org-pomodoros configuration.")
 
 
-(message "Start configuration of org-ref.")
-;;;; org-ref
-;% Set the case of the Author and Title to Capitalize with customize.
-(use-package org-ref
-     :straight (org-ref :type git :host github :repo "jkitchin/org-ref")
-     :init
-    (use-package bibtex)
-    (setq bibtex-autokey-year-length 4
-          bibtex-autokey-name-year-separator ""
-          bibtex-autokey-year-title-separator ""
-          bibtex-autokey-titleword-separator ""
-          bibtex-autokey-titlewords 9
-          bibtex-autokey-titlewords-stretch 9
-          bibtex-autokey-titleword-length 15)
-    ;% H is the hyper key. I have bound H to Fn. For the MacAlly keyboard, it is bound to right-command.
-    (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
-    ;% (use-package org-ref-ivy)
-    (setq org-ref-insert-link-function 'org-ref-insert-link-hydra/body
-                org-ref-insert-cite-function 'org-ref-cite-insert-ivy
-                org-ref-insert-label-function 'org-ref-insert-label-link
-                org-ref-insert-ref-function 'org-ref-insert-ref-link
-                org-ref-cite-onclick-function (lambda (_) (org-ref-citation-hydra/body)))
-    ; (use-package org-ref-arxiv)
-    ; (use-package org-ref-pubmed)
-    ; (use-package org-ref-wos)
-)
-(message "Finished configuration of org-ref.")
+; (message "Start configuration of org-ref.")
+; ;;;; org-ref
+; ;% Set the case of the Author and Title to Capitalize with customize.
+; (use-package org-ref
+;      :straight (org-ref :type git :host github :repo "jkitchin/org-ref")
+;      :init
+;     (use-package bibtex)
+;     (setq bibtex-autokey-year-length 4
+;           bibtex-autokey-name-year-separator ""
+;           bibtex-autokey-year-title-separator ""
+;           bibtex-autokey-titleword-separator ""
+;           bibtex-autokey-titlewords 9
+;           bibtex-autokey-titlewords-stretch 9
+;           bibtex-autokey-titleword-length 15)
+;     ;% H is the hyper key. I have bound H to Fn. For the MacAlly keyboard, it is bound to right-command.
+;     (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
+;     ;% (use-package org-ref-ivy)
+;     (setq org-ref-insert-link-function 'org-ref-insert-link-hydra/body
+;                 org-ref-insert-cite-function 'org-ref-cite-insert-ivy
+;                 org-ref-insert-label-function 'org-ref-insert-label-link
+;                 org-ref-insert-ref-function 'org-ref-insert-ref-link
+;                 org-ref-cite-onclick-function (lambda (_) (org-ref-citation-hydra/body)))
+;     ; (use-package org-ref-arxiv)
+;     ; (use-package org-ref-pubmed)
+;     ; (use-package org-ref-wos)
+; )
+; (message "Finished configuration of org-ref.")
 
 
-(message "Start bibtex-completion-bibliography configuration of org-ref.")
+(message "Start bibtex-completion-bibliography configuration.")
 (setq bibtex-completion-bibliography '("/Users/blaine/Documents/global.bib")
     bibtex-completion-library-path '("/Users/blaine/0papersLabeled/" "/Users/blaine/0booksLabeled/")
     bibtex-completion-notes-path "/Users/blaine/org-roam/references/notes/"
@@ -1028,31 +1024,40 @@ Also see `prot-window-delete-popup-frame'." command)
       bibtex-autokey-titlewords 2
       bibtex-autokey-titlewords-stretch 1
       bibtex-autokey-titleword-length 5)
-(message "Finished bibtex-completion-bibliography configuration of org-ref.")
+(message "Finished bibtex-completion-bibliography configuration.")
 
 
 (message "Start org-roam configurations")
 ;;;; Basic org-roam config
 (use-package org-roam
-   :straight (org-roam :type git :host github :repo "org-roam/org-roam")
-   :custom
-   (org-roam-directory (file-truename "/Users/blaine/org-roam/"))
-   :bind (("C-c n l" . org-roam-buffer-toggle)
-          ("C-c n f" . org-roam-node-find)
-          ("C-c n g" . org-roam-graph)
-          ("C-c n i" . org-roam-node-insert)
-          ("C-c n c" . #'org-id-get-create)
-          ;; Dailies
-          ("C-c n j" . org-roam-dailies-capture-today))
-   :config
-   ;% If you're using a vertical completion framework, you might want a more informative completion interface
-   (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
-   (org-roam-db-autosync-mode))
-   ;%(org-roam-ui-mode))
+  :straight (org-roam 
+             :type git 
+             :host github 
+             :repo "org-roam/org-roam")
+  :init
+  (setq org-roam-v2-ack t)  ;; If you're using Org-roam v2             
+  :custom
+  (org-roam-directory (file-truename "/Users/blaine/org-roam/"))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-id-get-create)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today))
+  :config
+  ;; Ensure C-c n is a prefix key
+  (define-prefix-command 'org-roam-prefix-map)
+  (global-set-key (kbd "C-c n") 'org-roam-prefix-map)
+  ;; If you're using a vertical completion framework, you might want a more informative completion interface
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+  (org-roam-db-autosync-mode)
+  (org-roam-ui-mode))
    ;% If using org-roam-protocol
-   ;%(use-package org-roam-protocol))
+   ;% (use-package org-roam-protocol
+   ;%      :straight t))
 ;% Following https://jethrokuan.github.io/org-roam-guide/
-(message "Start org-roam-capture template configurations, line 1721")
+(message "Start org-roam-capture template configurations.")
 
 ; (setq org-roam-capture-templates
 ;       '(("p" "permanent" plain
@@ -1121,7 +1126,7 @@ Also see `prot-window-delete-popup-frame'." command)
 (use-package org-roam-bibtex
   :straight (org-roam-bibtex :type git :host github :repo "org-roam/org-roam-bibtex")    
   :after org-roam
-  :config
+  :config)
   ;(require 'org-ref)) ; optional: if using Org-ref v2 or v3 citation links
 (message "Finished org-roam-bibtex.")
 
