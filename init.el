@@ -4,7 +4,7 @@
 ;%  - The lines without semicolons in the left margin wind up in code blocks.
 ;%  
 ;%  - I use the bash command  alias e29f='/Applications/Emacs29.4.app/Contents/MacOS/Emacs --init-directory ~/e29fewpackages --debug-init'
-;%  
+;%  - Note that you can toogle a fullscreen of Emacs on the Mac with M-F10.
 ;; The top section sets up the package management software and must come first.
 (setq user-emacs-directory "~/e29fewpackages/")
 (defvar bootstrap-version)
@@ -73,6 +73,13 @@
   :config
   (setq exec-path-from-shell-variables '("PATH" "GOPATH" "PYTHONPATH"))
   (exec-path-from-shell-initialize))
+;;; Set the path to the new Node.js binary
+;% The default Node.js is installed by macports in /opt/local/bin and is outdated.
+;% The newer version is installed by home brew in /usr/local/bin.
+;% Check version of Node found by runing (shell-command-to-string "node -v")
+(let ((new-node-path "/usr/local/bin/node"))
+  (setq exec-path (cons new-node-path exec-path))
+  (setenv "PATH" (concat new-node-path ":" (getenv "PATH"))))
 ;;; Set size of the starting Window
 ;%  I like a wider window. Setting it initially saves an operation.
 (setq initial-frame-alist '((top . 1)
@@ -100,6 +107,21 @@
 ;%  ***************************** User-defined functions section ***********************************************  
 ;; Start user-defined functions section
 (message "User defined functions in alphabetical order.") 
+;% (defun append-to-sqlite-table (db-path table-name pairs)
+;%   "Append PAIRS of terms to a two-column TABLE-NAME in the SQLite database at DB-PATH.
+;% PAIRS should be a list of cons cells, where each cons cell is a pair of terms."
+;%   (let ((db (emacsql-sqlite db-path)))
+;%     (dolist (pair pairs)
+;%       (emacsql db
+;%                [:insert :into $i1 :values $v2]
+;%                table-name
+;%                (vector (car pair) (cdr pair))))
+;%     (emacsql-close db)))
+;% ;; Example usage:
+;% (let ((db-path "/path/to/your/database.sqlite")
+;%       (table-name 'your_table)
+;%       (pairs '((term1 . term2) (term3 . term4) (term5 . term6))))
+;%   (append-to-sqlite-table db-path table-name pairs))
 ;;; convert-init-el-to-org    
 (defun convert-init-el-to-org (input-file output-file)
       "Convert an Emacs init.el file to an Org-mode file."
@@ -216,6 +238,27 @@
     (insert (format "#+CAPTION: %s \\label{%s}\n" caption label))
     (insert (format "#+NAME: %s\n" label))
     (insert (format "[[file:%s]]\n" image-name))))
+;;; launch-ithoughtsx
+;% This is the best mindmapping software that I have encountered.
+(defun launch-ithoughtsx ()
+  "Launch iThoughtsX application."
+  (interactive)
+  (shell-command "open -a iThoughtsX"))
+(global-set-key (kbd "C-c i") 'launch-ithoughtsx) 
+;;; launch-jabref
+;% I favored the simplicity and power of JabRef for mamanging BibTeX entries.
+(defun launch-jabref ()
+      "Launch jabRef application."
+      (interactive)
+      (shell-command "open -a JabRef"))
+    (global-set-key (kbd "C-c j") 'launch-jabref) 
+;;; launch-timesspent
+;% This is a sqlite database where I track my effort.
+(defun launch-timesspent ()
+      "Launch timesspent database."
+      (interactive)
+      (shell-command "open /Users/blaine/6003TimeTracking/cb/mytime.db"))
+    (global-set-key (kbd "C-c e") 'launch-timesspent) 
 ;;; Convert a selected latex list of items to a org-mode list
 ;%  To use this function, select the region containing the LaTeX list and run:
 ;%  M-x latex-to-org-list-region
@@ -396,6 +439,8 @@ Also see `prot-window-delete-popup-frame'." command)
 ;;;; AUCTeX
 ;%  This is the more advanced LaTeX. 
 ;%  Emacs has native LaTeX support that AUCTeX is an alternative to.
+(setq exec-path (append '("/usr/local/texlive/2024/bin/universal-darwin") exec-path))
+(setenv "PATH" (concat "/usr/local/texlive/2024/bin/universal-darwin:" (getenv "PATH")))
 (use-package auctex
   :straight t
   :defer t)
@@ -529,6 +574,7 @@ Also see `prot-window-delete-popup-frame'." command)
   (define-key company-active-map (kbd "M-.") #'company-show-location)
   (define-key company-active-map (kbd "RET") nil))
 ;;;; Company Configuration
+;%  This is a popular autocompletion package.
 ;%  Source: https://github.com/Exafunction/codeium.el
 (use-package company
   :straight t    
@@ -548,9 +594,67 @@ Also see `prot-window-delete-popup-frame'." command)
    ;; also get a drop down
    company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend)
    ))
+;;;; copilot
+;% see https://github.com/copilot-emacs/copilot.el?tab=readme-ov-file for install protocol.
+;% Requires a Github Copilot subscription.
+;% I had to configure the copilot-node-executable variable to point to the correct executable.
+;% Configure by entering
+;% See for fancy functions to enhance experience: 
+(use-package copilot
+  :straight (:host github :repo "copilot-emacs/copilot.el" :files ("*.el"))
+  :ensure t) 
+(add-hook 'prog-mode-hook 'copilot-mode)
+(define-key copilot-completion-map (kbd "<tab>") 'copilot-accept-completion)
+(define-key copilot-completion-map (kbd "TAB") 'copilot-accept-completion)  
 (message "Finished C package configurations")
+
+;;; E
+(message "Started E packages configurations")
+(use-package emacsql
+    :straight t)
+; (package-use emacsql-sqlite
+;     :straight t)
+(message "Finished E packages configurations")
+
+
+
+;;; F
+(message "Started F packages configurations")
+;;;; frame-tabs
+;% This package is fanstastic! I love the tiny tabs.
+;% They ease navigating between buffers, especially when using emacsclient.
+(frame-tabs-mode)
+(message "Finished F packages configurations")
+
+
+
+(message "Started J packages configurations")
+;;;; Jinx
+;% The enhancted spell checker.
+;% Uses fewer resources than flyspell and is faster.
+;% https://github.com/minad/jinx/wiki
+(use-package jinx
+  :straight (jinx :type git :host github :repo "minad/jinx")
+  :hook (emacs-startup . global-jinx-mode)
+  :bind (("M-$" . jinx-correct)
+         ("C-M-$" . jinx-languages)))
+
+;% Enable Jinx globally
+(add-hook 'emacs-startup-hook #'global-jinx-mode)
+
+(keymap-global-set "M-$" #'jinx-correct)
+(keymap-global-set "C-M-$" #'jinx-languages)
+(message "Finished J packages configurations")
 (message "Started L packages configurations")
 ;;; L
+;;;; listen
+;% MP3 player
+;% No configuration required.
+;% package-install listen
+;% Requires vlc installed via home brew.
+;% Configure via customize the file path to your mp3 files.
+;% Adding mp3 files without metadata to queues is tricky.
+;% Free mp3's of classical music can be found here: https://archive.org/ and here 
 ;;;; lsp-mode
 ;%  This mode is required to be able to use other lsp modes.
 (use-package lsp-mode
@@ -593,26 +697,99 @@ Also see `prot-window-delete-popup-frame'." command)
 (message "Start M package configurations")
 ;;; M
 ;;;; Marginalia Configuration
-;%  This package produces a transient list of optional commands.
+;%  This package adds the first line of the docstring for the commands returned by vertico.
 (use-package marginalia
   :straight (marginalia :type git :host github :repo "minad/marginalia")
   :config
   (marginalia-mode))
 (customize-set-variable 'marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
 (marginalia-mode 1)
-
+;;;; Markdown
+;% Sometimes we have to edit the README.md files for our secret manuscirpt repositroies on GitHub or Codeberg.
+(use-package markdown-mode
+  :ensure t
+  :mode ("\\.md\\'" . markdown-mode)
+  :init (setq markdown-command "multimarkdown"))
+  (with-eval-after-load 'markdown-mode
+    (define-key markdown-mode-map (kbd "M-<up>") 'markdown-move-item-up)
+    (define-key markdown-mode-map (kbd "M-<down>") 'markdown-move-item-down))
+;% Functions to move list items up and down
+  (defun markdown-move-item-up ()
+    "Move the current markdown list item up."
+    (interactive)
+    (let ((col (current-column)))
+      (markdown-beginning-of-item)
+      (transpose-lines 1)
+      (forward-line -2)
+      (forward-char col)))
+  (defun markdown-move-item-down ()
+    "Move the current markdown list item down."
+    (interactive)
+    (let ((col (current-column)))
+      (markdown-beginning-of-item)
+      (forward-line 1)
+      (transpose-lines 1)
+      (forward-line -1)
+      (forward-char col)))
 ;;;; Math-preview that is mode agnostic
 ;%  Uses MathJaX.
-;%  You have to download and install the bindary
+;%  You have to download and install the binary
 (use-package math-preview
   :straight t
   :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
+
+
+;% ;;;; Mingus
+;% ;% For Linux users.
+;% ;% A MPD client for Emacs that provides a user-friendly interface for managing your music library and playlists.
+;% (use-package mingus
+;%     :straight t
+;%     :config
+;%     (setq mingus-mpd-host "localhost"
+;%           mingus-mpd-port "6600"))
+;% ;% Mingus can exceed the buffer limits.
+;% ;% Keep playists short.
+;% (setq max-specpdl-size 13000)  ;; Default is 1300
+;% (setq max-lisp-eval-depth 8000)  ;; Default is 800
+;% ;;;; MPC
+;% ;% A lighter MPD client
+;% ;% Must install mpc outside of Emacs. I used home brew.
+;% ;% Check connection to MPD with `mpc -h localhost -p 6600 status`
+;% (use-package mpc
+;%   :straight t
+;%   :config
+;%   (setq mpc-host "localhost"
+;%         mpc-port "6600"))
+;% (setenv "MPD_HOST" "localhost")
+;% (setenv "MPD_PORT" "6600")
+;% ;;;; MPD
+;% ;% Runs as a daemon.
+;% ;% Can install with home brew on the Mac.
+;% (use-package mpdel
+;%     :straight (mpdel :type git :host github :repo "mpdel/mpdel")
+;%     :config
+;%     (setq mpdel-prefix-key (kbd "C-c m"))
+;% (mpdel-mode))
 (message "Finished M packages configurations")
-
-
-
 (message "Start O package configurations")
 ;;; O
+;;;; orderless
+;% This package returns search terms without regard to their order in the name of the returned function or command.
+(use-package orderless
+  :straight t
+  :init
+  (setq completion-styles '(orderless)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+;;;; LaTeX config for org-mode
+(with-eval-after-load 'ox-latex
+  (setq org-latex-pdf-process
+        '("pdflatex -interaction nonstopmode --shell-escape -synctex=1 -output-directory %o %f"
+          "bibtex %b"
+          "pdflatex -interaction nonstopmode --shell-escape -synctex=1 -output-directory %o %f"
+          "pdflatex -interaction nonstopmode --shell-escape -synctex=1 -output-directory %o %f")))
+
+
 ;;;; Org-agenda
 ;%  This can be complex to configure.
 
@@ -633,27 +810,27 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%  These settings have been added to the customization section.
 ;%  They can only be called once in an init.el file.
 ;% #+BEGIN-COMMENT
-;% (let* ((variable-tuple
-;%         (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
-;%               ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
-;%               ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
-;%               ((x-list-fonts "Verdana")         '(:font "Verdana"))
-;%               ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
-;%               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
-;%        (base-font-color     (face-foreground 'default nil 'default))
-;%        (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
-;% 
-;%   (custom-theme-set-faces
-;%    'user
-;%    `(org-level-8 ((t (,@headline ,@variable-tuple))))
-;%    `(org-level-7 ((t (,@headline ,@variable-tuple))))
-;%    `(org-level-6 ((t (,@headline ,@variable-tuple))))
-;%    `(org-level-5 ((t (,@headline ,@variable-tuple))))
-;%    `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
-;%    `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
-;%    `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
-;%    `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
-;%    `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
+(let* ((variable-tuple
+        (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
+              ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+              ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+              ((x-list-fonts "Verdana")         '(:font "Verdana"))
+              ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+              (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+       (base-font-color     (face-foreground 'default nil 'default))
+       (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+
+  (custom-theme-set-faces
+   'user
+   `(org-level-8 ((t (,@headline ,@variable-tuple))))
+   `(org-level-7 ((t (,@headline ,@variable-tuple))))
+   `(org-level-6 ((t (,@headline ,@variable-tuple))))
+   `(org-level-5 ((t (,@headline ,@variable-tuple))))
+   `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+   `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
+   `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
+   `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
+   `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
 ;% #+END_COMMENT
 
 ;;;;; Org-agenda key-bindings
@@ -707,25 +884,27 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%    ("/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org" :maxlevel . 3)
 ;%    ))
 
-;;;;;; Writing project log files as refile targets
+;;;;;; Include the writing project log files as refile targets
+;% A list can be stored in a private file
 ;%  The TODOs are at the 3rd headline level.
-
-(setq my-org-refile-targets '(
-    ("/Users/blaine/0573CrystalDetectionMeasurement/log0573.org" :maxlevel . 3)
-    ("/Users/blaine/0598tenRulesWritingLog/cb/log0598tsrWritingLog.org" :maxlevel . 3)
-    ("/Users/blaine/1019NIHemofat/cb/log1019.org" :maxlevel . 3)
-   ))
-
+;% Initialize private refile targets as an empty list.
+(setq private-refile-targets '())
+;; Load private refile targets from an external file if it exists.
+(let ((private-file (expand-file-name "private-refile-targets.el" user-emacs-directory)))
+  (when (file-exists-p private-file)
+    (load private-file)))
+;% Public refile target:
+(setq public-refile-target
+      '(( "/Users/blaine/1019NIHemofat/cb/log1019.org" :maxlevel . 3)))
+;% Combine the private and public refile targets. The private version could be the above empty list.
+(setq my-org-refile-targets (append private-refile-targets public-refile-target))
 (defun my-select-org-refile-target ()
      "Prompt for an org refile target from a list of directories."
      (interactive)
      (let ((target (completing-read "Select refile target: " my-org-refile-targets)))
        (setq my-org-refile-targets `((,target :maxlevel . 3)))))
-
 (setq org-refile-use-outline-path 'file)
 (global-set-key (kbd "C-c r") 'my-select-org-refile-target)
-
-
 ;;;;;; Append TODO item at bottom of TODO list in writing project log file.
 ;%  I like to use project ID number and 'do' at the tag.
 (defun my-append-todo-to-heading (tag todo-text)
@@ -739,9 +918,7 @@ Also see `prot-window-delete-popup-frame'." command)
                  (insert (format "*** TODO %s \n" todo-text)))
              (message "Heading with tag %s not found" tag))))
 (global-set-key (kbd "C-c t") 'my-append-todo-to-heading)
-
 (message "Finished refile target configuration.")
-
 ;;;;; Customized agenda views
 ;% 
 ;% These are my customized agenda views by project.
@@ -800,37 +977,42 @@ Also see `prot-window-delete-popup-frame'." command)
          "List of all projects"
          tags
          "LEVEL=2/PROJ")))
-
 ;;;; Remap the change priority keys to use the UP or DOWN key
 ;; (define-key org-mode-map (kbd "C-c <up>") 'org-priority-up)
 ;; (define-key org-mode-map (kbd "C-c <down>") 'org-priority-down)
 (message "Finished org-agenda custum command configuration.")
-
-
 (message "Started org-cc.")
-;;;; org-cc 
-;% Context clues
-;% source  https://github.com/durableOne/org-cc
-(use-package org-cc
-  :straight (org-cc :type git :host github :repo "durableOne/org-cc")        
-  :ensure nil
-  :after org
-  :custom
-  (org-cc-directory (concat org-directory "org-cc")) ;; subdirectory of the heading's attachment directory
-  (org-cc-days 14)
-  :init
-  (add-hook 'org-clock-in-hook #'org-cc-display-notes)
-)
-(global-set-key (kbd "C-c k") 'org-cc-edit-cc-file)
-(global-set-key (kbd "C-c x") 'org-cc-display-notes)
-(message "Finished org-cc.")
-
+;% ;;;; org-cc
+;% ;% Context clues
+;% ;% source  https://github.com/durableOne/org-cc
+;% (use-package org-cc
+;%   :straight (org-cc :type git :host github :repo "durableOne/org-cc")
+;%   :ensure nil
+;%   :after org
+;%   :custom
+;%   (org-cc-directory (concat org-directory "org-cc")) ;; subdirectory of the heading's attachment directory
+;%   (org-cc-days 14)
+;%   :init
+;%   (add-hook 'org-clock-in-hook #'org-cc-display-notes)
+;% )
+;% (global-set-key (kbd "C-c k") 'org-cc-edit-cc-file)
+;% (global-set-key (kbd "C-c x") 'org-cc-display-notes)
+;% (message "Finished org-cc.")
+(message "Started org-noter configuration.")
+;;;; org-noter
+;% This package synchronizes notes on documents, such as PDFs, while keeping the notes themselves in an Org-mode file. 
+;% The external notes are in a org document with all the features that Org has.
+;% Enter `i` in the document buffer to save the location of the note.
+;% Workds best with pdf-tools and org-ref.
+;% Integrated here with citar.
+;%
+;% - Open a new reference note with (citar0-open-notes)
+;% Open the document in Emacs.
+;% M-x org-noter
 (use-package org-noter
-             :straight
-             (:repo "org-noter/org-noter"
-                    :host github
-                    :type git
-                    :files ("*.el" "modules/*.el")))
+             :straight)
+;% Create folder for storing the org-noter-notes.
+                    (setq org-noter-notes-search-path '("~/org-noter-notes/"))
 
 ;% (message "Started org-noter configuration.")
 ;% (use-package org-noter
@@ -935,8 +1117,6 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%(use-package pdf-tools-org-noter-helpers
 ;%  :straight (pdf-tools-org-noter-helpers :type git :host github :repo "analyticd/pdf-tools-org-noter-helpers"))
 (message "Finished org-noter configuration.")
-
-
 (message "Start org-pomodoro configuration.")
 ;;;; org-pomodoro
 (use-package org-pomodoro
@@ -944,7 +1124,6 @@ Also see `prot-window-delete-popup-frame'." command)
     :commands  (org-pomodoro)
     :config
     (setq alert-user-configuration (quote ((((:category . "org-pomodoro")) libnotify nil)))))
-
 ;% add hook to enable automated start of the next pom after a break.
 ;% Source: https://github.com/marcinkoziej/org-pomodoro/issues/32
 ;% (add-hook 'org-pomodoro-break-finished-hook
@@ -956,7 +1135,6 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%             (register-to-point 1)
 ;%             (shell-command-to-string "open -a tomighty.app")
 ;%             ))
-
 (use-package sound-wav)
 (setq org-pomodoro-ticking-sound-p nil)
 (setq org-pomodoro-ticking-sound-states '(:pomodoro :short-break :long-break))
@@ -967,40 +1145,35 @@ Also see `prot-window-delete-popup-frame'." command)
 (setq org-pomodoro-long-break-sound-args "-volume 0.9")
 (setq org-pomodoro-short-break-sound-args "-volume 0.9")
 (setq org-pomodoro-ticking-sound-args "-volume 0.3")
-
 (global-set-key (kbd "C-c o") 'org-pomodoro)
 (message "Finished org-pomodoros configuration.")
-
-
-; (message "Start configuration of org-ref.")
-; ;;;; org-ref
-; ;% Set the case of the Author and Title to Capitalize with customize.
-; (use-package org-ref
-;      :straight (org-ref :type git :host github :repo "jkitchin/org-ref")
-;      :init
-;     (use-package bibtex)
-;     (setq bibtex-autokey-year-length 4
-;           bibtex-autokey-name-year-separator ""
-;           bibtex-autokey-year-title-separator ""
-;           bibtex-autokey-titleword-separator ""
-;           bibtex-autokey-titlewords 9
-;           bibtex-autokey-titlewords-stretch 9
-;           bibtex-autokey-titleword-length 15)
-;     ;% H is the hyper key. I have bound H to Fn. For the MacAlly keyboard, it is bound to right-command.
-;     (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
-;     ;% (use-package org-ref-ivy)
-;     (setq org-ref-insert-link-function 'org-ref-insert-link-hydra/body
-;                 org-ref-insert-cite-function 'org-ref-cite-insert-ivy
-;                 org-ref-insert-label-function 'org-ref-insert-label-link
-;                 org-ref-insert-ref-function 'org-ref-insert-ref-link
-;                 org-ref-cite-onclick-function (lambda (_) (org-ref-citation-hydra/body)))
-;     ; (use-package org-ref-arxiv)
-;     ; (use-package org-ref-pubmed)
-;     ; (use-package org-ref-wos)
-; )
-; (message "Finished configuration of org-ref.")
-
-
+(message "Start configuration of org-ref.")
+;;;; org-ref
+;% Set the case of the Author and Title to Capitalize with customize.
+(use-package org-ref
+     :straight (org-ref :type git :host github :repo "jkitchin/org-ref")
+     :init
+    (use-package bibtex)
+    (setq bibtex-autokey-year-length 4
+          bibtex-autokey-name-year-separator ""
+          bibtex-autokey-year-title-separator ""
+          bibtex-autokey-titleword-separator ""
+          bibtex-autokey-titlewords 9
+          bibtex-autokey-titlewords-stretch 9
+          bibtex-autokey-titleword-length 15)
+    ;% H is the hyper key. I have bound H to Fn. For the MacAlly keyboard, it is bound to right-command.
+    (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
+    ;% (use-package org-ref-ivy)
+    (setq org-ref-insert-link-function 'org-ref-insert-link-hydra/body
+                org-ref-insert-cite-function 'org-ref-cite-insert-ivy
+                org-ref-insert-label-function 'org-ref-insert-label-link
+                org-ref-insert-ref-function 'org-ref-insert-ref-link
+                org-ref-cite-onclick-function (lambda (_) (org-ref-citation-hydra/body)))
+    ; (use-package org-ref-arxiv)
+    ; (use-package org-ref-pubmed)
+    ; (use-package org-ref-wos)
+)
+(message "Finished configuration of org-ref.")
 (message "Start bibtex-completion-bibliography configuration.")
 (setq bibtex-completion-bibliography '("/Users/blaine/Documents/global.bib")
     bibtex-completion-library-path '("/Users/blaine/0papersLabeled/" "/Users/blaine/0booksLabeled/")
@@ -1025,8 +1198,6 @@ Also see `prot-window-delete-popup-frame'." command)
       bibtex-autokey-titlewords-stretch 1
       bibtex-autokey-titleword-length 5)
 (message "Finished bibtex-completion-bibliography configuration.")
-
-
 (message "Start org-roam configurations")
 ;;;; Basic org-roam config
 (use-package org-roam
@@ -1057,8 +1228,8 @@ Also see `prot-window-delete-popup-frame'." command)
    ;% (use-package org-roam-protocol
    ;%      :straight t))
 ;% Following https://jethrokuan.github.io/org-roam-guide/
+(message "Finished org-roam configurations")
 (message "Start org-roam-capture template configurations.")
-
 ; (setq org-roam-capture-templates
 ;       '(("p" "permanent" plain
 ;          "%?"
@@ -1120,19 +1291,19 @@ Also see `prot-window-delete-popup-frame'." command)
 ;% to get around this problem, setting up org-export to preserve line breaks is useful
 ;% (setq org-export-preserve-breaks t)
 (message "Finished org-roam configurations.")
-
-
 (message "Start org-roam-bibtex.")
+; (use-package org-roam-bibtex
+;   :straight (org-roam-bibtex :type git :host github :repo "org-roam/org-roam-bibtex")
+;   :after org-roam
+;   :config
+;   (use-package org-ref)) ; optional: if using Org-ref v2 or v3 citation links
 (use-package org-roam-bibtex
   :straight (org-roam-bibtex :type git :host github :repo "org-roam/org-roam-bibtex")    
   :after org-roam
-  :config)
-  ;(require 'org-ref)) ; optional: if using Org-ref v2 or v3 citation links
+  :config
+  (use-package org-ref)) 
 (message "Finished org-roam-bibtex.")
-
-
-
-
+(message "Start toggle-state-at-point for use with images and equations.")
 ;% Place point on link to image. Left-click to display image in another buffer. Enter C-c t to display the code of the link for easy editing.
 ;% Place point on equation. Enter C-c t to render it with MathJax. Left click on the rendered equation to switch back to the code.
 ;% Put multiline code from mathpix between double dollar signs and treat as being on one line.
@@ -1143,7 +1314,7 @@ Also see `prot-window-delete-popup-frame'." command)
 ;% ('latex-???? (math-preview-region))
 ;% ???? has to be some kind of an org-element-type. org-latex-section does not work.
 ;% This would enable using this application of the math-preview-region to render equation environments.
-(defun bhmm/toggle-state-at-point ()
+                                                          (defun bhmm/toggle-state-at-point ()
   (interactive)
   (let ((ctx (org-element-context)))
     (pcase (org-element-type ctx)
@@ -1152,14 +1323,11 @@ Also see `prot-window-delete-popup-frame'." command)
 
 ;% (define-key org-mode-map (kbd "C-c t") #'bhmm/toggle-state-at-point)
 (message "End toggle-state-at-point for use with images and equations.")
-
+(message "Start ox-typst.")
 (use-package ox-typst
   :straight (ox-typst :type git :host github :repo "jmpunkt/ox-typst")
   :after org)
-
-
-
-
+(message "Finished ox-typst.")
 (message "Finished O package configurations")
 
 (message "Start P package configurations")
@@ -1169,18 +1337,323 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%  You will likely by prompted to run pdf-tools-install to compile it.
 ;%  It is needed to be able to annotate PDF from inside Emacs.
 ;%  I have not gotten that far.
+;% (use-package pdf-tools
+;% :straight t
+;% :pin manual ;; manually update
+;% :config
+;% ;; initialise
+;% (pdf-tools-install)
+;% ;; open pdfs scaled to fit width
+;% (setq-default pdf-view-display-size 'fit-width)
+;% ;; use normal isearch
+;% (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+;% :custom
+;% (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
+
+;% source https://github.com/malb/emacs.d/blob/master/malb.org#pdf-viewer
+;% Learned about this from Julien during Berln Emacs Meetup Nev. 27, 2024.                        
 (use-package pdf-tools
- :straight t    
- :pin manual ;; manually update
- :config
- ;; initialise
- (pdf-tools-install)
- ;; open pdfs scaled to fit width
- (setq-default pdf-view-display-size 'fit-width)
- ;; use normal isearch
- (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
- :custom
- (pdf-annot-activate-created-annotations t "automatically annotate highlights"))
+   :straight         
+   :magic ("%PDF" . pdf-view-mode)
+   :after (org tex)
+   :config (progn
+             (pdf-tools-install)
+             (setq-default pdf-view-display-size 'fit-page)
+
+             (require 'pdf-annot)
+
+             (setq pdf-annot-default-annotation-properties
+                   `((t (label . "M"))
+                     (text (icon . "Note")
+                           (color . "#dc322f"))
+                     (highlight (color . "#fef3d5"))
+                     (squiggly (color . "#dc322f"))
+                     (strike-out(color . "#dc322f"))
+                     (underline (color . "#268bd2"))))
+
+             (setq pdf-view-resize-factor 1.1
+                   pdf-annot-activate-created-annotations t
+                   pdf-view-midnight-invert nil
+                   pdf-misc-print-programm "gtklp")
+
+             (add-hook 'pdf-annot-list-mode-hook #'pdf-annot-list-follow-minor-mode)
+
+             (defun malb/pdf-extract-table (&optional format)
+               (let* ((format- (upcase (or format "CSV")))
+                      (pdf-filename (buffer-file-name))
+                      (txt-filename (make-temp-name "/tmp/tabula-"))
+                      (buffer (generate-new-buffer
+                               (generate-new-buffer-name (format "*tabular<%s>*"
+                                                                 (file-name-base pdf-filename))))))
+                 (shell-command (format "java -jar %s -f %s -p %d -o \"%s\" \"%s\""
+                                        malb/tabular-jar
+                                        format-
+                                        (pdf-view-current-page)
+                                        txt-filename
+                                        pdf-filename)
+                                nil)
+                 (pop-to-buffer buffer)
+                 (insert-file-contents txt-filename)
+                 (cond
+                  ((eq format nil) (progn
+                                     (org-mode)
+                                     (call-interactively 'mark-whole-buffer)
+                                     (call-interactively 'org-table-convert-region)))
+                  ((string-equal format "JSON") (progn
+                                                  (json-mode)
+                                                  (json-pretty-print-buffer))))
+                 (delete-file txt-filename)))
+
+             (defun malb/pdf-extract-text ()
+               (let* ((pdf-filename (buffer-file-name))
+                      (txt-filename (make-temp-name "/tmp/tabula-"))
+                      (buffer (generate-new-buffer
+                               (generate-new-buffer-name (format "*pdftotext<%s>*"
+                                                                 (file-name-base pdf-filename))))))
+                 (shell-command (format "pdftotext -layout -nopgbrk \"%s\" \"%s\""
+                                        pdf-filename txt-filename)
+                                nil)
+                 (pop-to-buffer buffer)
+                 (insert-file-contents txt-filename)
+                 (delete-file txt-filename)))
+
+             (defun malb/pdf-view-llncs-from-bounding-box (arg &optional window)
+               "Set the height from the page's bounding-box."
+               (interactive "P")
+               (let* ((bb (pdf-cache-boundingbox (pdf-view-current-page window)))
+                      (h-margin (max (if arg 0.35 0.28) (or pdf-view-bounding-box-margin 0.0)))
+                      (w-margin (max 0.05 (or pdf-view-bounding-box-margin 0.0)))
+                      (slice (list (- (nth 0 bb)
+                                      (/ h-margin 2.0))
+                                   (- (nth 1 bb)
+                                      (/ w-margin 2.0))
+                                   (+ (- (nth 2 bb) (nth 0 bb))
+                                      h-margin)
+                                   (+ (- (nth 3 bb) (nth 1 bb))
+                                      w-margin))))
+                 (apply 'pdf-view-set-slice
+                        (append slice (and window (list window))))))
+
+             (defun pdf-tools-org-edges-to-region (edges)
+               "Attempt to get 4-entry region \(LEFT TOP RIGHT BOTTOM\) from several EDGES.
+ We need this to import annotations and to get marked-up text, because
+ annotations are referenced by its edges, but functions for these tasks
+ need region."
+               (let ((left0 (nth 0 (car edges)))
+                     (top0 (nth 1 (car edges)))
+                     (bottom0 (nth 3 (car edges)))
+                     (top1 (nth 1 (car (last edges))))
+                     (right1 (nth 2 (car (last edges))))
+                     (bottom1 (nth 3 (car (last edges))))
+                     (n (safe-length edges)))
+                 ;; we try to guess the line height to move
+                 ;; the region away from the boundary and
+                 ;; avoid double lines
+                 (list left0
+                       (+ top0 (/ (- bottom0 top0) 3))
+                       right1
+                       (- bottom1 (/ (- bottom1 top1) 3)))))
+
+             (defun malb/pdf-annot-export-as-org (compact)
+               "Export annotations to Org Buffer."
+               (interactive "P")
+               (let* ((annots (sort (pdf-annot-getannots) 'pdf-annot-compare-annotations))
+                      (source-buffer (current-buffer))
+                      (source-buffer-name (file-name-sans-extension (buffer-name)))
+                      (source-file-name (buffer-file-name source-buffer))
+                      (target-buffer-name (format "*Notes for %s*" source-buffer-name))
+                      (target-buffer (get-buffer-create target-buffer-name)))
+
+                 (with-current-buffer target-buffer
+                   (org-mode)
+                   (erase-buffer)
+                   (visual-fill-column-mode)
+
+                   (insert (format "#+title: Notes for %s\n" source-buffer-name))
+                   (insert (format "#+startup: indent\n\n"))
+                   (insert (format "source: [[%s][%s]]\n\n" source-file-name source-buffer))
+
+                   (mapc (lambda (annot) ;; traverse all annotations
+                           (progn
+                             (let ((page (cdr (assoc 'page annot)))
+                                   (highlighted-text
+                                    (if (pdf-annot-get annot 'markup-edges)
+                                        (let ((highlighted-text
+                                               (with-current-buffer source-buffer
+                                                 (pdf-info-gettext (pdf-annot-get annot 'page)
+                                                                   (pdf-tools-org-edges-to-region
+                                                                    (pdf-annot-get annot 'markup-edges))))))
+                                          (replace-regexp-in-string "\n" " " highlighted-text))
+                                      nil))
+                                   (note (pdf-annot-get annot 'contents)))
+
+                               (when (or highlighted-text (> (length note) 0))
+                                 (insert (if compact "- " "* "))
+                                 (insert (format "page %s" page))
+
+                                 (when highlighted-text
+                                   (insert (if compact (format ": “%s” " highlighted-text)
+                                             (concat "\n\n#+begin_quote\n"
+                                                     highlighted-text
+                                                     "\n#+end_quote"))))
+                                 (if (> (length note) 0)
+                                     (insert (if compact (format " %s\n" note)
+                                               (format "\n\n%s\n\n" note)))
+                                   (insert (if compact "\n" "\n\n")))))))
+                         (cl-remove-if
+                          (lambda (annot) (member (pdf-annot-get-type annot) (list 'link)))
+                          annots))
+                   )
+                 (pop-to-buffer target-buffer '(display-buffer-pop-up-window))))
+
+             (defun malb/pdf-annot-export-as-md (compact)
+               "Export annotations to Makrdown buffer."
+               (interactive "P")
+               (let* ((annots (sort (pdf-annot-getannots) 'pdf-annot-compare-annotations))
+                      (source-buffer (current-buffer))
+                      (source-buffer-name (file-name-sans-extension (buffer-name)))
+                      (source-file-name (buffer-file-name source-buffer))
+                      (target-buffer-name (format "*Notes for %s*" source-buffer-name))
+                      (target-buffer (get-buffer-create target-buffer-name)))
+                 (with-current-buffer target-buffer
+                   (markdown-mode)
+                   (erase-buffer)
+                   (visual-fill-column-mode)
+
+                   (insert (format "---\ntitle: Notes for %s\n---\n\n" source-buffer-name))
+                   (insert (format "source: [%s](%s)\n\n" source-buffer source-file-name))
+                   (mapc (lambda (annot) ;; traverse all annotations
+                           (progn
+                             (let ((page (cdr (assoc 'page annot)))
+                                   (highlighted-text
+                                    (if (pdf-annot-get annot 'markup-edges)
+                                        (let ((highlighted-text
+                                               (with-current-buffer source-buffer
+                                                 (pdf-info-gettext (pdf-annot-get annot 'page)
+                                                                   (pdf-tools-org-edges-to-region
+                                                                    (pdf-annot-get annot 'markup-edges))))))
+                                          (replace-regexp-in-string "\n" " " highlighted-text))
+                                      nil))
+                                   (note (pdf-annot-get annot 'contents)))
+
+                               (when (or highlighted-text (> (length note) 0))
+                                 (insert (if compact "- " "On "))
+                                 (insert (format "page %s" page))
+
+                                 (when highlighted-text
+                                   (insert (if compact (format ": “%s” " highlighted-text)
+                                             (concat ":  \n> "
+                                                     (replace-regexp-in-string "\n" "\n> " highlighted-text)
+                                                     "\n"))))
+                                 (if (> (length note) 0)
+                                     (insert (if compact (format " %s\n" note)
+                                               (format "\n\n%s\n\n" note)))
+                                   (insert (if compact "\n" "\n\n")))))))
+                         (cl-remove-if
+                          (lambda (annot) (member (pdf-annot-get-type annot) (list 'link)))
+                          annots)))
+                 (pop-to-buffer target-buffer '(display-buffer-pop-up-window))))
+
+             (defhydra malb/hydra-pdf-extract (:color blue)
+               "
+ Org:       _o_ compact  _O_ normal     _t_ table
+ Markdown:  _m_ compact  _M_ normal
+ Other:     _p_ plain    _c_ csv table  _j_ json table _x_ ocr
+ "
+               ("o" (lambda () (interactive) (malb/pdf-annot-export-as-org 1)))
+               ("O" malb/pdf-annot-export-as-org)
+               ("m" (lambda () (interactive) (malb/pdf-annot-export-as-md  1)))
+               ("M" malb/pdf-annot-export-as-md)
+               ("c" (lambda () (interactive) (malb/pdf-extract-table "CSV")))
+               ("j" (lambda () (interactive) (malb/pdf-extract-table "JSON")))
+               ("t" (lambda () (interactive) (malb/pdf-extract-table)))
+               ("p" (lambda () (interactive) (malb/pdf-extract-text)))
+               ("x" (lambda () (interactive) (start-process (format "ocr %s" buffer-file-name)
+                                                            nil "ocrmypdf" buffer-file-name buffer-file-name)))
+               ("q" nil "cancel"))
+
+             (bind-key "s h" #'malb/pdf-view-llncs-from-bounding-box pdf-view-mode-map)
+             (bind-key "D" #'dedicated-mode pdf-view-mode-map)
+             (bind-key "x" #'malb/hydra-pdf-extract/body pdf-view-mode-map)
+
+             (defun malb/pdf-annot-move (forward)
+               (let ((annot-list (with-current-buffer
+                                     (pdf-annot-get-buffer pdf-annot-edit-contents--annotation)
+                                   pdf-annot-list-buffer)))
+                 (if annot-list
+                     (progn
+                       (pdf-annot-edit-contents-commit)
+                       (if forward
+                           (call-interactively 'tablist-next-line)
+                         (call-interactively 'tablist-previous-line))
+                       (call-interactively 'tablist-find-entry))
+                   (let ((this nil)
+                         (next nil)
+                         (annotations
+                          (sort (pdf-annot-getannots
+                                 nil nil
+                                 (cdar pdf-annot-edit-contents--annotation))
+                                'pdf-annot-compare-annotations)))
+                     (dolist (annot (if forward annotations (reverse annotations)))
+                       (when (equal this t)
+                         (setq next annot)
+                         (setq this nil))
+                       (when (equal (pdf-annot-get-id annot)
+                                    (pdf-annot-get-id pdf-annot-edit-contents--annotation))
+                         (setq this t)))
+                     (pdf-annot-edit-contents-finalize t)
+                     (when next
+                       (pdf-view-goto-page (pdf-annot-get next 'page))
+                       (pdf-annot-edit-contents next))))))
+
+             (defun malb/pdf-annot-next ()
+               (interactive)
+               (malb/pdf-annot-move t))
+
+             (defun malb/pdf-annot-prev ()
+               (interactive)
+               (malb/pdf-annot-move nil))
+
+             (defun malb/pdf-annot-yank-highlight ()
+               (interactive)
+               (let* ((a pdf-annot-edit-contents--annotation)
+                      (text
+                       (replace-regexp-in-string
+                        "\n" " "
+                        (pdf-info-gettext
+                         (pdf-annot-get a 'page)
+                         (pdf-tools-org-edges-to-region (pdf-annot-get a 'markup-edges))
+                         0
+                         (pdf-annot-get a 'buffer)))))
+                 (insert (format "\"%s\"" text))))
+
+             (bind-key "C-c C-n" 'malb/pdf-annot-next pdf-annot-edit-contents-minor-mode-map)
+             (bind-key "C-c C-p" 'malb/pdf-annot-prev pdf-annot-edit-contents-minor-mode-map)
+             (bind-key "C-c C-y" 'malb/pdf-annot-yank-highlight pdf-annot-edit-contents-minor-mode-map)
+
+             (defun malb/do-to-pdf-view-buffer (fn)
+               (let ((cur-window (get-buffer-window)))
+                 (dolist (window (window-list))
+                   (let ((buffer (window-buffer window)))
+                     (with-current-buffer buffer
+                       (when (eq major-mode 'pdf-view-mode)
+                         (select-window window)
+                         (call-interactively fn)
+                         (select-window cur-window)
+                         ))))))
+
+             (defun malb/other-pdf-view-next-page ()
+               (interactive)
+               (malb/do-to-pdf-view-buffer #'pdf-view-next-page))
+
+             (defun malb/other-pdf-view-prev-page ()
+               (interactive)
+               (malb/do-to-pdf-view-buffer #'pdf-view-previous-page))
+
+             (bind-key "C->" #'malb/other-pdf-view-next-page org-mode-map)
+             (bind-key "C-<" #'malb/other-pdf-view-prev-page org-mode-map)
+             (bind-key "C->" #'malb/other-pdf-view-next-page LaTeX-mode-map)
+             (bind-key "C-<" #'malb/other-pdf-view-prev-page LaTeX-mode-map)))
 (message "Finished P package configurations.")
  
 (message "Start S package configurations.")
@@ -1204,6 +1677,36 @@ Also see `prot-window-delete-popup-frame'." command)
   :config
   (unless (server-running-p)
     (server-start)))
+   
+(use-package sqlite3
+      :straight t)
+      
+(defun export-csv-to-qiterm (csv-file db-file table-name)
+  "Export selected rows from a CSV file to an SQLite database."
+  (interactive "fCSV file: \nfSQLite DB file: \nsTable name: ")
+  (let ((db (sqlite3-open db-file))
+        (rows (with-temp-buffer
+                (insert-file-contents csv-file)
+                (split-string (buffer-string) "\n" t))))
+    (dolist (row rows)
+      (let ((values (split-string row ",")))
+        (sqlite3-exec db
+                      (format "INSERT INTO %s VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"
+                              table-name
+                              (nth 0 values)
+                              (nth 1 values)
+                              (nth 2 values)
+                              (nth 3 values)
+                              (nth 4 values)
+                              (nth 5 values)
+                              (nth 6 values)                              
+                              (nth 7 values)))))
+    (sqlite3-close db)
+    (message "Data successfully appended to %s" table-name)))
+
+;; Usage example:
+;; (export-csv-to-qiterm "~/6233iterm/qiterm.csv" "~/6233iterm/qiterm.db" "qiterm")   
+    
 (message "Finished S package configurations.")
 
 
@@ -1297,94 +1800,6 @@ Also see `prot-window-delete-popup-frame'." command)
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))  
 
-; ;;;; treemacs
-; ;%  Provides sidebar access to contents of the treemacs project directory
-; (use-package treemacs
-;    :straight t
-;    :defer t
-;    :init
-;    (with-eval-after-load 'winum
-;      (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-;    :config
-;    (progn
-;      (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
-;            treemacs-deferred-git-apply-delay        0.5
-;            treemacs-directory-name-transformer      #'identity
-;            treemacs-display-in-side-window          t
-;            treemacs-eldoc-display                   'simple
-;            treemacs-file-event-delay                2000
-;            treemacs-file-extension-regex            treemacs-last-period-regex-value
-;            treemacs-file-follow-delay               0.2
-;            treemacs-file-name-transformer           #'identity
-;            treemacs-follow-after-init               t
-;            treemacs-expand-after-init               t
-;            treemacs-find-workspace-method           'find-for-file-or-pick-first
-;            treemacs-git-command-pipe                ""
-;            treemacs-goto-tag-strategy               'refetch-index
-;            treemacs-header-scroll-indicators        '(nil . "^^^^^^")
-;            treemacs-hide-dot-git-directory          t
-;            treemacs-indentation                     2
-;            treemacs-indentation-string              " "
-;            treemacs-is-never-other-window           nil
-;            treemacs-max-git-entries                 5000
-;            treemacs-missing-project-action          'ask
-;            treemacs-move-files-by-mouse-dragging    t
-;            treemacs-move-forward-on-expand          nil
-;            treemacs-no-png-images                   nil
-;            treemacs-no-delete-other-windows         t
-;            treemacs-project-follow-cleanup          nil
-;            treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-;            treemacs-position                        'left
-;            treemacs-read-string-input               'from-child-frame
-;            treemacs-recenter-distance               0.1
-;            treemacs-recenter-after-file-follow      nil
-;            treemacs-recenter-after-tag-follow       nil
-;            treemacs-recenter-after-project-jump     'always
-;            treemacs-recenter-after-project-expand   'on-distance
-;            treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
-;            treemacs-project-follow-into-home        nil
-;            treemacs-show-cursor                     nil
-;            treemacs-show-hidden-files               t
-;            treemacs-silent-filewatch                nil
-;            treemacs-silent-refresh                  nil
-;            treemacs-sorting                         'alphabetic-asc
-;            treemacs-select-when-already-in-treemacs 'move-back
-;            treemacs-space-between-root-nodes        t
-;            treemacs-tag-follow-cleanup              t
-;            treemacs-tag-follow-delay                1.5
-;            treemacs-text-scale                      nil
-;            treemacs-user-mode-line-format           nil
-;            treemacs-user-header-line-format         nil
-;            treemacs-wide-toggle-width               70
-;            treemacs-width                           35
-;            treemacs-width-increment                 1
-;            treemacs-width-is-initially-locked       t
-;            treemacs-workspace-switch-cleanup        nil)
-;      ;; The default width and height of the icons is 22 pixels. If you are
-;      ;; using a Hi-DPI display, uncomment this to double the icon size.
-;      ;;(treemacs-resize-icons 44)
-;      (treemacs-follow-mode t)
-;      (treemacs-filewatch-mode t)
-;      (treemacs-fringe-indicator-mode 'always)
-;      (when treemacs-python-executable
-;        (treemacs-git-commit-diff-mode t))
-;      (pcase (cons (not (null (executable-find "git")))
-;                   (not (null treemacs-python-executable)))
-;        (`(t . t)
-;         (treemacs-git-mode 'deferred))
-;        (`(t . _)
-;         (treemacs-git-mode 'simple)))
-;      (treemacs-hide-gitignored-files-mode nil))
-;    :bind
-;    (:map global-map
-;          ("M-0"       . treemacs-select-window)
-;          ("C-x t 1"   . treemacs-delete-other-windows)
-;          ("C-x t t"   . treemacs)
-;          ("C-x t d"   . treemacs-select-directory)
-;          ("C-x t B"   . treemacs-bookmark)
-;          ("C-x t C-t" . treemacs-find-file)
-;          ("C-x t M-t" . treemacs-find-tag)))
-;
 ;;;; treemacs-protjectile
 (use-package treemacs-projectile
   :after (treemacs projectile)
@@ -1423,7 +1838,8 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%  See https://github.com/akermu/emacs-libvterm for configuration of init.el and .zshrc
 (use-package vterm
   :straight t)
-(define-key vterm-mode-map (kbd "C-q") #'vterm-send-next-key)
+(with-eval-after-load 'vterm
+  (define-key vterm-mode-map (kbd "C-q") #'vterm-send-next-key))
 
 ;;;; vertico
 (use-package vertico
@@ -1441,7 +1857,13 @@ Also see `prot-window-delete-popup-frame'." command)
 (message "Finished V package configurations.") 
 
 
-(message "Start package configurations W")
+(message "Start W package configurations")
+;;;; wc-mode
+;% Add the path to the repo
+(straight-use-package
+   '(wc-mode :type git :local-repo "~/e29fewpackages/manual-install/wc-mode"))
+(global-set-key "\C-cw" 'wc-mode)
+(wc-mode 1)
 (message "Finished W package configurations.") 
 
 
@@ -1494,21 +1916,31 @@ Also see `prot-window-delete-popup-frame'." command)
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(copilot-network-proxy '(:host "\"127.0.0.1\"" :port 7890))
+ '(copilot-node-executable "/usr/local/bin/node")
+(message "Start custom set-variables")
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(display-battery-mode t)
+ '(global-display-line-numbers-mode t)
  '(pdf-view-incompatible-modes
    '(linum-mode linum-relative-mode helm-linum-relative-mode nlinum-mode nlinum-hl-mode nlinum-relative-mode yalinum-mode))
  '(showkey-log-mode t)
  '(weatherline-mode t))
 (custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(org-document-title ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.6 :underline nil))))
- '(org-level-1 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.5))))
- '(org-level-2 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.3))))
- '(org-level-3 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.2))))
- '(org-level-4 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.1))))
- '(org-level-5 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
- '(org-level-6 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
- '(org-level-7 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
- '(org-level-8 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande")))))
+  ;; custom-set-faces was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+  '(org-document-title ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.6 :underline nil))))
+  '(org-level-1 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.5))))
+  '(org-level-2 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.3))))
+  '(org-level-3 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.2))))
+  '(org-level-4 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.1))))
+  '(org-level-5 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+  '(org-level-6 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+  '(org-level-7 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+  '(org-level-8 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande")))))
