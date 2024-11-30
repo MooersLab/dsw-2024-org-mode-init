@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/static/v1?label=dsw-2024-org-mode-init&message=0.4&color=brightcolor)
+![Version](https://img.shields.io/static/v1?label=dsw-2024-org-mode-init&message=0.5&color=brightcolor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 # Emacs configuration file for writing research papers in Org-mode 
@@ -12,7 +12,22 @@ It includes `company` for autocompletion.
 It uses `lsp-mode` instead of eglot.
 Uses James Stoup's fonts for org-mode.
 It includes custom functions to make it easier to work in Org Mode.
-The uses straight for package management.
+For example, `C-c t` captures a thought and adds it as a todo item to the bottom of the TODO list in the selected logfile. The keybinding `C-c r` is used to first select the target log file . 
+The configuration uses straight and use-package for package management.
+
+After my talk on November 22, I made the following enhancements:
+
+- Added copilot.el. You will need a GitHub token to use it. It can get in the way when writing prose and make the cursor jump to unintended places so use with caution.
+- Added org-roam, org-ref, citar-org-roam, org-roam-bibtex, and org-roam-bibtex - citar integration. (Org-ref is used to add bibtex entries to the bibliography by pasting the DOI into the buffer. Citar is used to insert the citations and generate the bibliography. Org-roam-bibtex is used to search for bibtex entries in the bibliography. Org-roam-bibtex - citar is used to insert the citations and generate the bibliography in org-roam.)
+- Moved the handling of org-roam capture notes to citar.
+- Added the faster `jinx` package for spell checking (use right mouse button to select a correction or to add a term to your personal library).
+- Added a function to open a bibNotes.org file in ~/bibNotes that is renamed after the citekey that the cursor is sitting on for the annotated bibliography. The entries in the main org file of the annotated bibliography
+- Added a function to open the log file in the current directory and place the cursor at line above the headline with restart-here tag. This is where you make the next daily entry.
+- Added wc-count-mode for displaying the new words added on the modeline.
+- Added the markdown package to support the editing of README.md files that you might edit for private GitHub repositories or Codeberg repositories where you store your manuscript file. Added functions to support the moving of items in a list up and down with M-<up> abd M-<down>.
+- Added the overlooked package orderless for enhanced searching of command in the mini-buffer.
+
+
 It should give the new user a rich enough experience to suppress their urge to add new packages and break their configuration.
 
 ## Prerequisite
@@ -74,9 +89,10 @@ The emacslient makee Emacs more useful for short edits where Neovim or Textmate 
 |Version      | Changes                                                                                                                                 | Date              |
 |:------------|:----------------------------------------------------------------------------------------------------------------------------------------|:------------------|
 | Version 0.1 |   Added badges, funding, and update table.  Initial commit.                                                                             | 2024 November 10  |
-| Version 0.2 |   Minor edits                                                                                                                           | 2024 November 22  |
-| Version 0.3 |   Add init file in org-mode format for rendering by GitHub.                                                                             | 2024 November 25  |
+| Version 0.2 |   Minor edits                                                                                                                                                      | 2024 November 22  |
+| Version 0.3 |   Add init file in org-mode format for rendering by GitHub.                                                                               | 2024 November 25  |
 | Version 0.4 |   Updated the init.el file with org-roam, org-ref, citar, org-roam-bibtex, and org-roam-bibtex - citar integration. Added a function to open bibNotes.org in ~/bibNotes for the annotated bibliography. This should complete the tool chain. | 2024 November 26  |
+| Version 0.5 |   Updated init.el file to specify path to texlive.                                                                                                   | 2024 November 30  |
 
 ## Acknowledgments
 ### Sources of funding
