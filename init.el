@@ -26,6 +26,8 @@
 (setq package-enable-at-startup nil)
 (use-package use-package)
 (setq straight-use-package-by-default t)
+(setq straight-vc-git-default-clone-depth 1)
+(setq straight-check-for-modifications '(check-on-save find-when-checking))
 ;%  Messages printed to the messages buffer aid in locating bugs in the config file because the bug is somewhere beyond the last message.
 (message "Finished straight package manager configuration.") 
 
@@ -60,24 +62,26 @@
 (global-display-line-numbers-mode)
 ;;; highlight current line
 ;%  This feature aids finding the cursor's current position.
-(global-hl-line-mode +1)
-(set-face-background hl-line-face "wheat1")
+; (global-hl-line-mode +1)
+; (set-face-background hl-line-face "wheat1")
+;;; Generic highlighting of current line for different background colors
+;; Load hl-line mode
+(require 'hl-line) 
+;; Set the hl-line face to a neutral color
+(set-face-attribute 'hl-line nil :background "Gray70" :foreground 'unspecified)
+;; Enable global hl-line mode
+(global-hl-line-mode 1)
+;; Set the region face to an intermediate color
+(set-face-attribute 'region nil :background "SlateGray" :foreground "black")
+;; Set the cursor color
+(set-cursor-color "yellow")
+;;; Fatten up the mode-line for easeir viewing
 (set-face-attribute 'mode-line nil  :height 180)
-;;; Shell configuration
-;%  Let Emacs know which shell that you are using.
-(use-package exec-path-from-shell
-  :straight t
-  :init
-  (setenv "SHELL" "/opt/local/bin/zsh")
-  :if (memq window-system '(mac ns x))
-  :config
-  (setq exec-path-from-shell-variables '("PATH" "GOPATH" "PYTHONPATH"))
-  (exec-path-from-shell-initialize))
 ;;; Set the path to the new Node.js binary
 ;% The default Node.js is installed by macports in /opt/local/bin and is outdated.
 ;% The newer version is installed by home brew in /usr/local/bin.
 ;% Check version of Node found by runing (shell-command-to-string "node -v")
-(let ((new-node-path "/usr/local/bin/node"))
+(let ((new-node-path "/opt/homebrew/bin/node"))
   (setq exec-path (cons new-node-path exec-path))
   (setenv "PATH" (concat new-node-path ":" (getenv "PATH"))))
 ;;; Set size of the starting Window
@@ -102,6 +106,8 @@
 (save-place-mode 1)
 ;%  Optionally specify the file to save cursor positions
 (setq save-place-file "~/e29fewpackages/places")
+(setq server-name "e29f")
+(server-start)
 ;;; Setting section is finished
 (message "Finished settings configuration.") 
 ;%  ***************************** User-defined functions section ***********************************************  
@@ -421,6 +427,16 @@ Also see `prot-window-delete-popup-frame'." command)
   (shell (current-buffer))
   (process-send-string nil "echo 'test1'\n")
   (process-send-string nil "echo 'test2'\n"))
+;;; Split line with many sentences into one line per sentence.
+(defun split-sentences-into-lines (start end)
+    "Move each sentence in the region to its own line."
+    (interactive "r")
+    (save-excursion
+      (goto-char start)
+      (while (re-search-forward "\\([.!?]\\)\\s-+" end t)
+        (replace-match "\\1\n"))))
+;% Bind the function to a key combination, e.g., C-c s
+(global-set-key (kbd "C-c s") 'split-sentences-into-lines)
 ;;; Move the cursor to the minibuffer without using the mouse
 ;%  From video https://www.youtube.com/watch?v=X8c_TrGfYcM&t=15s using Emacs as a multiplexer."
 ;%  Derived from http://stackoverflow.com/a/4116113/446256.
@@ -549,10 +565,72 @@ Also see `prot-window-delete-popup-frame'." command)
 ; Add the above code to your init.el file.
 ; Ensure that my/bibtex-directory is defined and points to the directory where your BibTeX files are stored.
 ; When you open a note with citar, it will use the specified template and function
-
-
-
 (setq-default citar-open-note-function 'my-citar-org-open-notes)
+
+
+(use-package codeium
+   :straight '(:type git :host github :repo "Exafunction/codeium.el")
+   :init
+   ;; use globally
+   (add-to-list 'completion-at-point-functions #'codeium-completion-at-point)
+   ;; or on a hook
+   ;; (add-hook 'python-mode-hook
+   ;;     (lambda ()
+   ;;         (setq-local completion-at-point-functions '(codeium-completion-at-point))))
+
+   ;; if you want multiple completion backends, use cape (https://github.com/minad/cape):
+   ;; (add-hook 'python-mode-hook
+   ;;     (lambda ()
+   ;;         (setq-local completion-at-point-functions
+   ;;             (list (cape-super-capf #'codeium-completion-at-point #'lsp-completion-at-point)))))
+   ;; an async company-backend is coming soon!
+
+   ;; codeium-completion-at-point is autoloaded, but you can
+   ;; optionally set a timer, which might speed up things as the
+   ;; codeium local language server takes ~0.2s to start up
+   ;; (add-hook 'emacs-startup-hook
+   ;;  (lambda () (run-with-timer 0.1 nil #'codeium-init)))
+
+   ;; :defer t ;; lazy loading, if you want
+   
+   :config
+   (setq use-dialog-box nil) ;; do not use popup boxes
+
+   ;; if you don't want to use customize to save the api-key
+   ;; (setq codeium/metadata/api_key "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+
+   ;; get codeium status in the modeline
+   (setq codeium-mode-line-enable
+       (lambda (api) (not (memq api '(CancelRequest Heartbeat AcceptCompletion)))))
+   (add-to-list 'mode-line-format '(:eval (car-safe codeium-mode-line)) t)
+   ;; alternatively for a more extensive mode-line
+   ;; (add-to-list 'mode-line-format '(-50 "" codeium-mode-line) t)
+
+   ;; use M-x codeium-diagnose to see apis/fields that would be sent to the local language server
+   (setq codeium-api-enabled
+       (lambda (api)
+           (memq api '(GetCompletions Heartbeat CancelRequest GetAuthToken RegisterUser auth-redirect AcceptCompletion))))
+   ;; you can also set a config for a single buffer like this:
+   ;; (add-hook 'python-mode-hook
+   ;;     (lambda ()
+   ;;         (setq-local codeium/editor_options/tab_size 4)))
+
+   ;; You can overwrite all the codeium configs!
+   ;; for example, we recommend limiting the string sent to codeium for better performance
+   (defun my-codeium/document/text ()
+       (buffer-substring-no-properties (max (- (point) 3000) (point-min)) (min (+ (point) 1000) (point-max))))
+   ;; if you change the text, you should also change the cursor_offset
+   ;; warning: this is measured by UTF-8 encoded bytes
+   (defun my-codeium/document/cursor_offset ()
+       (codeium-utf8-byte-length
+           (buffer-substring-no-properties (max (- (point) 3000) (point-min)) (point))))
+   (setq codeium/document/text 'my-codeium/document/text)
+   (setq codeium/document/cursor_offset 'my-codeium/document/cursor_offset)
+)
+
+
+
+
 ;;;; company-box
 ;;;;; formats the options delivered by the company autocompletion system
 (use-package company-box
@@ -594,6 +672,69 @@ Also see `prot-window-delete-popup-frame'." command)
    ;; also get a drop down
    company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend)
    ))
+   
+   
+;; ;;;; codeium
+;; ;% Source: https://github.com/Exafunction/codeium.el
+;; (straight-use-package '(codeium :type git :host github :repo "Exafunction/codeium.el")
+;; 		      :init
+;; ;; use globally
+;; (add-to-list 'completion-at-point-functions #'codeium-completion-at-point)
+;; ;; or on a hook
+;; ;; (add-hook 'python-mode-hook
+;; ;;     (lambda ()
+;; ;;         (setq-local completion-at-point-functions '(codeium-completion-at-point))))
+
+;; ;; if you want multiple completion backends, use cape (https://github.com/minad/cape):
+;; ;; (add-hook 'python-mode-hook
+;; ;;     (lambda ()
+;; ;;         (setq-local completion-at-point-functions
+;; ;;             (list (cape-capf-super #'codeium-completion-at-point #'lsp-completion-at-point)))))
+;; ;; an async company-backend is coming soon!
+
+;; ;; codeium-completion-at-point is autoloaded, but you can
+;; ;; optionally set a timer, which might speed up things as the
+;; ;; codeium local language server takes ~0.2s to start up
+;; ;; (add-hook 'emacs-startup-hook
+;; ;;  (lambda () (run-with-timer 0.1 nil #'codeium-init)))
+
+;; ;; :defer t ;; lazy loading, if you want
+;;                        :config
+;;   (setq use-dialog-box nil) ;; do not use popup boxes
+
+;; ;; if you don't want to use customize to save the api-key
+;; ;; (setq codeium/metadata/api_key "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+
+;; ;; get codeium status in the modeline
+;;    (setq codeium-mode-line-enable
+;;     (lambda (api) (not (memq api '(CancelRequest Heartbeat AcceptCompletion)))))
+;;   (add-to-list 'mode-line-format '(:eval (car-safe codeium-mode-line)) t)
+;; ;; alternatively for a more extensive mode-line
+;; ;; (add-to-list 'mode-line-format '(-50 "" codeium-mode-line) t)
+
+;; ;; use M-x codeium-diagnose to see apis/fields that would be sent to the local language server
+;;    (setq codeium-api-enabled
+;;     (lambda (api)
+;;         (memq api '(GetCompletions Heartbeat CancelRequest GetAuthToken RegisterUser auth-redirect AcceptCompletion))))
+;; ;; you can also set a config for a single buffer like this:
+;; ;; (add-hook 'python-mode-hook
+;; ;;     (lambda ()
+;; ;;         (setq-local codeium/editor_options/tab_size 4)))
+
+;; ;; You can overwrite all the codeium configs!
+;; ;; for example, we recommend limiting the string sent to codeium for better performance
+;; (defun my-codeium/document/text ()
+;;     (buffer-substring-no-properties (max (- (point) 3000) (point-min)) (min (+ (point) 1000) (point-max))))
+;; ;; if you change the text, you should also change the cursor_offset
+;; ;; warning: this is measured by UTF-8 encoded bytes
+;; (defun my-codeium/document/cursor_offset ()
+;;     (codeium-utf8-byte-length
+;;         (buffer-substring-no-properties (max (- (point) 3000) (point-min)) (point))))
+;; (setq codeium/document/text 'my-codeium/document/text)
+;; (setq codeium/document/cursor_offset 'my-codeium/document/cursor_offset))
+
+
+
 ;;;; copilot
 ;% see https://github.com/copilot-emacs/copilot.el?tab=readme-ov-file for install protocol.
 ;% Requires a Github Copilot subscription.
@@ -610,12 +751,29 @@ Also see `prot-window-delete-popup-frame'." command)
 
 ;;; E
 (message "Started E packages configurations")
+;;;; emacsql
 (use-package emacsql
     :straight t)
 ; (package-use emacsql-sqlite
 ;     :straight t)
 (message "Finished E packages configurations")
-
+;;;; exec-path-from-shell
+(use-package exec-path-from-shell
+  :straight t
+  :config
+  (setq exec-path-from-shell-arguments nil)
+  (setq exec-path-from-shell-variables '("PATH" "MANPATH" "SHELL"))
+  (exec-path-from-shell-initialize))
+; ;;; Shell configuration
+; ;%  Let Emacs know which shell that you are using.
+; (use-package exec-path-from-shell
+;   :straight t
+;   :init
+;   (setenv "SHELL" "/opt/homebrew/bin/zsh")
+;   :if (memq window-system '(mac ns x))
+;   :config
+;   (setq exec-path-from-shell-variables '("PATH" "GOPATH" "PYTHONPATH"))
+;   (exec-path-from-shell-initialize))
 
 
 ;;; F
@@ -633,17 +791,17 @@ Also see `prot-window-delete-popup-frame'." command)
 ;% The enhancted spell checker.
 ;% Uses fewer resources than flyspell and is faster.
 ;% https://github.com/minad/jinx/wiki
-(use-package jinx
-  :straight (jinx :type git :host github :repo "minad/jinx")
-  :hook (emacs-startup . global-jinx-mode)
-  :bind (("M-$" . jinx-correct)
-         ("C-M-$" . jinx-languages)))
-
-;% Enable Jinx globally
-(add-hook 'emacs-startup-hook #'global-jinx-mode)
-
-(keymap-global-set "M-$" #'jinx-correct)
-(keymap-global-set "C-M-$" #'jinx-languages)
+; (use-package jinx
+;   :straight (jinx :type git :host github :repo "minad/jinx")
+;   :hook (emacs-startup . global-jinx-mode)
+;   :bind (("M-$" . jinx-correct)
+;          ("C-M-$" . jinx-languages)))
+;
+; ;% Enable Jinx globally
+; (add-hook 'emacs-startup-hook #'global-jinx-mode)
+;
+; (keymap-global-set "M-$" #'jinx-correct)
+; (keymap-global-set "C-M-$" #'jinx-languages)
 (message "Finished J packages configurations")
 (message "Started L packages configurations")
 ;;; L
@@ -656,19 +814,232 @@ Also see `prot-window-delete-popup-frame'." command)
 ;% Adding mp3 files without metadata to queues is tricky.
 ;% Free mp3's of classical music can be found here: https://archive.org/ and here 
 ;;;; lsp-mode
-;%  This mode is required to be able to use other lsp modes.
-(use-package lsp-mode
-  :straight t
-  :commands (lsp lsp-deferred)
-  :bind (:map lsp-mode-map
-              ("C-c d" . lsp-describe-thing-at-point)
-              ("C-c a" . lsp-execute-code-action))
-  :bind-keymap ("C-c l" . lsp-command-map)
-  :hook ((latex-mode . lsp-deferred)
-  (lsp-mode . lsp-enable-which-key-integration))
-  :config
-  (lsp-enable-which-key-integration t)
-  (setq lsp-headerline-breadcrumb-enable nil))
+; ;%  This mode is required to be able to use other lsp modes.
+; (use-package lsp-mode
+;   :straight t
+;   :commands (lsp lsp-deferred)
+;   :bind (:map lsp-mode-map
+;               ("C-c d" . lsp-describe-thing-at-point)
+;               ("C-c a" . lsp-execute-code-action))
+;   :bind-keymap ("C-c l" . lsp-command-map)
+;   :hook ((latex-mode . lsp-deferred)
+;   (lsp-mode . lsp-enable-which-key-integration))
+;   :config
+;   (lsp-enable-which-key-integration t)
+;   (setq lsp-headerline-breadcrumb-enable nil))
+;
+;   ; LSP-MODE CONFIGURATION
+;   ;;
+;   ;;     add to init.el
+;   ;;
+;   ;; `lsp-mode` excels over eglot in that you can run it in parallel alongside
+;   ;; other LSPs.
+;;;; lsp-mode
+;%  Config for openai
+; (use-package lsp-mode
+;     :straight t
+;     :commands lsp
+;     :hook
+;     ((LaTeX-mode
+;       TeX-mode
+;       bibtex-mode
+;       c++-mode
+;       c-mode
+;       clojure-mode
+;       coffee-mode
+;       csharp-mode
+;       css-mode
+;       diff-mode
+;       dockerfile-mode
+;       ess-mode
+;       emacs-lisp-mode
+;       fsharp-mode
+;       go-mode
+;       groovy-mode
+;       html-mode
+;       java-mode
+;       js-mode
+;       js2-mode
+;       json-mode
+;       less-css-mode
+;       lua-mode
+;       makefile-mode
+;       markdown-mode
+;       nxml-mode
+;       objc-mode
+;       org-mode
+;       perl-mode
+;       php-mode
+;       powershell-mode
+;       python-mode
+;       ruby-mode
+;       rust-mode
+;       sass-mode
+;       scss-mode
+;       sh-mode
+;       sql-mode
+;       swift-mode
+;       text-mode
+;       toml-mode
+;       typescript-mode
+;       web-mode
+;       yaml-mode
+;       ) . (lambda ()
+;             (uniteai-mode 1)
+;             (lsp)))
+;
+;     :init
+;     ;; Tell lsp-mode not to ask if you're ok with the server modifying the document.
+;     (setq lsp-restart 'auto-restart)
+;
+;     :config
+;     ;; if it can't launch the right LSP, don't pester
+;     (setq lsp-enable-suggest-server-download nil)
+;
+;     :bind
+;     ;; Code Actions
+;     ("M-'" . lsp-execute-code-action))
+;
+;
+;   ;;;;;;;;;;
+;
+;   ;; Global stopping
+;   (defun lsp-stop ()
+;     (interactive)
+;     (let* ((doc (lsp--text-document-identifier)))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.stop"
+;                       :arguments ,(vector doc)))))
+;
+;   ;; Example Counter
+;   (defun lsp-example-counter ()
+;     (interactive)
+;     (let* ((doc (lsp--text-document-identifier))
+;            (pos (lsp--cur-position)))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.exampleCounter"
+;                       :arguments ,(vector doc pos)))))
+;
+;   ;; Document
+;   (defun lsp-document ()
+;     (interactive)
+;     (unless (region-active-p)
+;       (error "No region selected"))
+;     (let* (
+;            (doc (lsp--text-document-identifier))
+;            (range (list :start (lsp--point-to-position (region-beginning))
+;                         :end (lsp--point-to-position (region-end)))))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.document"
+;                      :arguments ,(vector doc range)))))
+;
+;   ;; Local LLM
+;   (defun lsp-local-llm ()
+;     (interactive)
+;     (unless (region-active-p)
+;       (error "No region selected"))
+;     (let* ((doc (lsp--text-document-identifier))
+;            (range (list :start (lsp--point-to-position (region-beginning))
+;                         :end (lsp--point-to-position (region-end)))))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.localLlmStream"
+;                       :arguments ,(vector doc range)))))
+;
+;   ;; Transcription
+;   (defun lsp-transcribe ()
+;     (interactive)
+;     (let* ((doc (lsp--text-document-identifier))
+;            (pos (lsp--cur-position)))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.transcribe"
+;                      :arguments ,(vector doc pos)))))
+;
+;   ;; OpenAI
+;   (defun lsp-openai-gpt ()
+;     (interactive)
+;     (unless (region-active-p)
+;       (error "No region selected"))
+;     (let* (
+;            (doc (lsp--text-document-identifier))
+;            (range (list :start (lsp--point-to-position (region-beginning))
+;                         :end (lsp--point-to-position (region-end)))))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.openaiAutocompleteStream"
+;                      :arguments ,(vector doc range "FROM_CONFIG_COMPLETION" "FROM_CONFIG")))))
+;
+;   (defun lsp-openai-chatgpt ()
+;     (interactive)
+;     (unless (region-active-p)
+;       (error "No region selected"))
+;     (let* (
+;            (doc (lsp--text-document-identifier))
+;            (range (list :start (lsp--point-to-position (region-beginning))
+;                         :end (lsp--point-to-position (region-end)))))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.openaiAutocompleteStream"
+;                      :arguments ,(vector doc range "FROM_CONFIG_CHAT" "FROM_CONFIG")))))
+;
+;
+;   ;; Local LLM
+;   (defun lsp-text-to-speech-save ()
+;     (interactive)
+;     (unless (region-active-p)
+;       (error "No region selected"))
+;     (let* ((doc (lsp--text-document-identifier))
+;            (range (list :start (lsp--point-to-position (region-beginning))
+;                         :end (lsp--point-to-position (region-end)))))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.textToSpeechSave"
+;                       :arguments ,(vector doc range)))))
+;
+;   ;; Local LLM
+;   (defun lsp-text-to-speech-play ()
+;     (interactive)
+;     (unless (region-active-p)
+;       (error "No region selected"))
+;     (let* ((doc (lsp--text-document-identifier))
+;            (range (list :start (lsp--point-to-position (region-beginning))
+;                         :end (lsp--point-to-position (region-end)))))
+;       (lsp-request "workspace/executeCommand"
+;                    `(:command "command.textToSpeechPlay"
+;                       :arguments ,(vector doc range)))))
+;
+;
+;   (define-minor-mode uniteai-mode
+;     "Minor mode for interacting with UniteAI server."
+;     :lighter " UniteAI"
+;     :keymap (let ((map (make-sparse-keymap)))
+;               (define-key map (kbd "C-c l s") 'lsp-stop)
+;               (define-key map (kbd "C-c l e") 'lsp-example-counter)
+;               (define-key map (kbd "C-c l l") 'lsp-local-llm)
+;               (define-key map (kbd "C-c l v") 'lsp-transcribe)
+;               (define-key map (kbd "C-c l g") 'lsp-openai-gpt)
+;               (define-key map (kbd "C-c l c") 'lsp-openai-chatgpt)
+;               (define-key map (kbd "C-c l d") 'lsp-document)
+;
+;               (define-key map (kbd "C-c l a s") 'lsp-text-to-speech-save)
+;               (define-key map (kbd "C-c l a p") 'lsp-text-to-speech-play)
+;               map))
+;
+;   (lsp-register-client
+;    (make-lsp-client
+;
+;     ;; STDIO Mode
+;     :new-connection (lsp-stdio-connection `("uniteai_lsp" "--stdio"))
+;
+;     ;; ;; TCP Mode
+;     ;; :new-connection (lsp-tcp-connection
+;     ;;                  (lambda (port)
+;     ;;                    `("uniteai_lsp" "--tcp" "--lsp_port" ,(number-to-string port))))
+;
+;     :priority -3
+;     :major-modes '(python-mode markdown-mode org-mode)
+;     :server-id 'uniteai
+;     :add-on? t  ; run in parallel to other LSPs
+;     ))
+;
+; (setq lsp-tcp-connection-timeout 5.0)  ; default was 2.0
+
 ;;;; lsp-latex
 (use-package lsp-latex
   :straight t
@@ -734,9 +1105,9 @@ Also see `prot-window-delete-popup-frame'." command)
 ;;;; Math-preview that is mode agnostic
 ;%  Uses MathJaX.
 ;%  You have to download and install the binary
-(use-package math-preview
-  :straight t
-  :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
+; (use-package math-preview
+;   :straight t
+;   :custom (math-preview-command "/Users/blaine/.nvm/versions/node/v22.4.0/lib/node_modules/math-preview/math-preview.js"))
 
 
 ;% ;;;; Mingus
@@ -810,27 +1181,27 @@ Also see `prot-window-delete-popup-frame'." command)
 ;%  These settings have been added to the customization section.
 ;%  They can only be called once in an init.el file.
 ;% #+BEGIN-COMMENT
-(let* ((variable-tuple
-        (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
-              ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
-              ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
-              ((x-list-fonts "Verdana")         '(:font "Verdana"))
-              ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
-              (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
-       (base-font-color     (face-foreground 'default nil 'default))
-       (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
-
-  (custom-theme-set-faces
-   'user
-   `(org-level-8 ((t (,@headline ,@variable-tuple))))
-   `(org-level-7 ((t (,@headline ,@variable-tuple))))
-   `(org-level-6 ((t (,@headline ,@variable-tuple))))
-   `(org-level-5 ((t (,@headline ,@variable-tuple))))
-   `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
-   `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
-   `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
-   `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
-   `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
+; (let* ((variable-tuple
+;         (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
+;               ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+;               ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+;               ((x-list-fonts "Verdana")         '(:font "Verdana"))
+;               ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+;               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+;        (base-font-color     (face-foreground 'default nil 'default))
+;        (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+;
+;   (custom-theme-set-faces
+;    'user
+;    `(org-level-8 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-7 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-6 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-5 ((t (,@headline ,@variable-tuple))))
+;    `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+;    `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
+;    `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
+;    `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.5))))
+;    `(org-document-title ((t (,@headline ,@variable-tuple :height 1.6 :underline nil))))))
 ;% #+END_COMMENT
 
 ;;;;; Org-agenda key-bindings
@@ -1009,11 +1380,12 @@ Also see `prot-window-delete-popup-frame'." command)
 ;% - Open a new reference note with (citar0-open-notes)
 ;% Open the document in Emacs.
 ;% M-x org-noter
-(use-package org-noter
-             :straight)
-;% Create folder for storing the org-noter-notes.
-                    (setq org-noter-notes-search-path '("~/org-noter-notes/"))
 
+;; Use straight to install org-noter
+(straight-use-package 'org-noter)
+
+;; Set the org-noter notes search path
+(setq org-noter-notes-search-path '("~/org-noter-notes/"))
 ;% (message "Started org-noter configuration.")
 ;% (use-package org-noter
 ;%   :straight (org-noter :type git :host github :repo "weirdNox/org-noter")
@@ -1677,7 +2049,8 @@ Also see `prot-window-delete-popup-frame'." command)
   :config
   (unless (server-running-p)
     (server-start)))
-   
+
+;;;; sqlite3  
 (use-package sqlite3
       :straight t)
       
@@ -1833,14 +2206,14 @@ Also see `prot-window-delete-popup-frame'." command)
 
 (message "Start V package configurations.")
 ;;; V
-;;;; vterm
-;%  One of five terminal type available in Emacs.
-;%  See https://github.com/akermu/emacs-libvterm for configuration of init.el and .zshrc
-(use-package vterm
-  :straight t)
-(with-eval-after-load 'vterm
-  (define-key vterm-mode-map (kbd "C-q") #'vterm-send-next-key))
-
+; ;;;; vterm
+; ;%  One of five terminal type available in Emacs.
+; ;%  See https://github.com/akermu/emacs-libvterm for configuration of init.el and .zshrc
+; (use-package vterm
+;   :straight t)
+; (with-eval-after-load 'vterm
+;   (define-key vterm-mode-map (kbd "C-q") #'vterm-send-next-key))
+;
 ;;;; vertico
 (use-package vertico
   :straight t
@@ -1866,6 +2239,14 @@ Also see `prot-window-delete-popup-frame'." command)
 (wc-mode 1)
 (message "Finished W package configurations.") 
 
+;;; X
+(message "Start X package configurations.")
+;;;; Xenops
+(use-package xenops
+  :straight (xenops :type git :host github :repo "dandavison/xenops"))
+(add-hook 'latex-mode-hook #'xenops-mode)
+(add-hook 'LaTeX-mode-hook #'xenops-mode)
+(message "Finished X package configurations.") 
 
 ;;; Y
 (message "Start package configurations Y")
@@ -1884,6 +2265,11 @@ Also see `prot-window-delete-popup-frame'." command)
   :straight t     
   :defer 2
   :bind ("C-c y" . hydra-yasnippet/body))
+
+
+(let ((hydra-file "~/e29fewpacakges/my-hydras/my-hydras.el"))
+  (when (file-exists-p hydra-file)
+    (load-file hydra-file)))
 
 ;;;; A popup menu for snippet selection
 (use-package popup
@@ -1911,36 +2297,35 @@ Also see `prot-window-delete-popup-frame'." command)
 ; Customizations
 ;%  Leave these alone.
 (message "Start custom set-variables")
+;; Set the C_INCLUDE_PATH environment variable
+(setenv "C_INCLUDE_PATH" "/opt/homebrew/include")
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(codeium/metadata/api_key "5519bf51-92c1-44c6-a134-08ac03cb342b")
  '(copilot-network-proxy '(:host "\"127.0.0.1\"" :port 7890))
- '(copilot-node-executable "/usr/local/bin/node")
-(message "Start custom set-variables")
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
+ '(copilot-node-executable "/opt/homebrew/bin/node")
  '(display-battery-mode t)
  '(global-display-line-numbers-mode t)
  '(pdf-view-incompatible-modes
-   '(linum-mode linum-relative-mode helm-linum-relative-mode nlinum-mode nlinum-hl-mode nlinum-relative-mode yalinum-mode))
+   '(linum-mode linum-relative-mode helm-linum-relative-mode nlinum-mode
+		nlinum-hl-mode nlinum-relative-mode yalinum-mode))
  '(showkey-log-mode t)
  '(weatherline-mode t))
+
 (custom-set-faces
-  ;; custom-set-faces was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
-  '(org-document-title ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.6 :underline nil))))
-  '(org-level-1 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.5))))
-  '(org-level-2 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.3))))
-  '(org-level-3 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.2))))
-  '(org-level-4 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.1))))
-  '(org-level-5 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
-  '(org-level-6 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
-  '(org-level-7 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
-  '(org-level-8 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande")))))
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(org-document-title ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.6 :underline nil))))
+ '(org-level-1 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.5))))
+ '(org-level-2 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.3))))
+ '(org-level-3 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.2))))
+ '(org-level-4 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande" :height 1.1))))
+ '(org-level-5 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-6 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-7 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande"))))
+ '(org-level-8 ((t (:inherit default :weight bold :foreground "Black" :font "Lucida Grande")))))
